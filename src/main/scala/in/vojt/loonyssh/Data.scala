@@ -11,4 +11,4 @@ package in.vojt.loonyshh
 case class NameList(names:List[String])
 
 object NameList:
-    given reader as SshReader[NameList] = SshReader[String].map(s => NameList(s.split(",").toList))
+    given reader as SSHReader[NameList] = SSHReader[String].map(s => NameList(s.split(",").toList))

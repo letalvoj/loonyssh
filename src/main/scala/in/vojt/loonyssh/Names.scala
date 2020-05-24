@@ -18,7 +18,7 @@ enum DisconnectCode(val code:Int):
     case IllegalUserName             extends DisconnectCode(15)
 
     val ByCode = DisconnectCode.values.map(obj => (obj.code, obj)).toMap
-    given reader as SshReader[DisconnectCode] = SshReader[Int].map(ByCode(_))
+    given reader as SSHReader[DisconnectCode] = SSHReader[Int].map(ByCode(_))
 
 enum ChannelOpenFailure(val code:Int):
     case ADMINISTRATIVELY_PROHIBITED extends ChannelOpenFailure(1)
@@ -27,7 +27,7 @@ enum ChannelOpenFailure(val code:Int):
     case RESOURCE_SHORTAGE           extends ChannelOpenFailure(4)
 
     val ByCode = ChannelOpenFailure.values.map(obj => (obj.code, obj)).toMap
-    given reader as SshReader[ChannelOpenFailure] = SshReader[Int].map(ByCode(_))
+    given reader as SSHReader[ChannelOpenFailure] = SSHReader[Int].map(ByCode(_))
 
 enum PseudoTerminalModes(val code:Int):
     /** Indicates end of options. */    
@@ -144,15 +144,15 @@ enum PseudoTerminalModes(val code:Int):
     case TTY_OP_OSPEED    extends PseudoTerminalModes(129)
 
     val ByCode = PseudoTerminalModes.values.map(obj => (obj.code, obj)).toMap
-    given reader as SshReader[PseudoTerminalModes] = SshReader[Int].map(ByCode(_))
+    given reader as SSHReader[PseudoTerminalModes] = SSHReader[Int].map(ByCode(_))
 
 
 enum Service:
     case `ssh-userauth`
     case `ssh-connection`
 
-    inline given reader as SshReader[Service] =
-        SshReader[String].map(Service.valueOf)
+    inline given reader as SSHReader[Service] =
+        SSHReader[String].map(Service.valueOf)
 
 enum AuthenticationMethod:
     case `publickey`
@@ -160,8 +160,8 @@ enum AuthenticationMethod:
     case `hostBased`
     case `none`
 
-    inline given reader as SshReader[AuthenticationMethod] =
-        SshReader[String].map(AuthenticationMethod.valueOf)
+    inline given reader as SSHReader[AuthenticationMethod] =
+        SSHReader[String].map(AuthenticationMethod.valueOf)
 
 enum ConnectionProtocolChannelType:
     case `session`
@@ -169,15 +169,15 @@ enum ConnectionProtocolChannelType:
     case `forwarded-tcpip`
     case `direct-tcpip`
 
-    given reader as SshReader[ConnectionProtocolChannelType] =
-        SshReader[String].map(ConnectionProtocolChannelType.valueOf)
+    given reader as SSHReader[ConnectionProtocolChannelType] =
+        SSHReader[String].map(ConnectionProtocolChannelType.valueOf)
 
 enum ConnectionProtocolRequestType:
     case `tcpip-forward`
     case `cancel-tcpip-forward`
 
-    given reader as SshReader[ConnectionProtocolRequestType] =
-        SshReader[String].map(ConnectionProtocolRequestType.valueOf)
+    given reader as SSHReader[ConnectionProtocolRequestType] =
+        SSHReader[String].map(ConnectionProtocolRequestType.valueOf)
 
 enum ConnectionProtocolChannelRequestName:
     case `pty-req`
@@ -192,8 +192,8 @@ enum ConnectionProtocolChannelRequestName:
     case `exit-status`
     case `exit-signal`
 
-    given reader as SshReader[ConnectionProtocolChannelRequestName] =
-        SshReader[String].map(ConnectionProtocolChannelRequestName.valueOf)
+    given reader as SSHReader[ConnectionProtocolChannelRequestName] =
+        SSHReader[String].map(ConnectionProtocolChannelRequestName.valueOf)
 
 enum SignalName:
     case `ABRT`
@@ -210,15 +210,15 @@ enum SignalName:
     case `USR1`
     case `USR2`
 
-    given reader as SshReader[SignalName] =
-        SshReader[String].map(SignalName.valueOf)
+    given reader as SSHReader[SignalName] =
+        SSHReader[String].map(SignalName.valueOf)
 
 enum KeyExchangeMethod:
     case `diffie-hellman-group1-sha1`
     case `diffie-hellman-group14-sha1`
 
-    given reader as SshReader[KeyExchangeMethod] =
-        SshReader[String].map(KeyExchangeMethod.valueOf)
+    given reader as SSHReader[KeyExchangeMethod] =
+        SSHReader[String].map(KeyExchangeMethod.valueOf)
 
 enum EncryptionAlgorithm:
     case `3des-cbc`
@@ -239,8 +239,8 @@ enum EncryptionAlgorithm:
     case `des-cbc`
     case `none`
 
-    given reader as SshReader[EncryptionAlgorithm] =
-        SshReader[String].map(EncryptionAlgorithm.valueOf)
+    given reader as SSHReader[EncryptionAlgorithm] =
+        SSHReader[String].map(EncryptionAlgorithm.valueOf)
 
 enum MACAlgorithm:
     case `hmac-sha1`           
@@ -249,8 +249,8 @@ enum MACAlgorithm:
     case `hmac-md5-96`         
     case `none`                
 
-    given reader as SshReader[MACAlgorithm] =
-        SshReader[String].map(MACAlgorithm.valueOf)
+    given reader as SSHReader[MACAlgorithm] =
+        SSHReader[String].map(MACAlgorithm.valueOf)
 
 enum PublicKeyAlgorithm:
     case `ssh-dss`     
@@ -258,12 +258,12 @@ enum PublicKeyAlgorithm:
     case `pgp-sign-rsa`
     case `pgp-sign-dss`
 
-    given reader as SshReader[PublicKeyAlgorithm] =
-        SshReader[String].map(PublicKeyAlgorithm.valueOf)
+    given reader as SSHReader[PublicKeyAlgorithm] =
+        SSHReader[String].map(PublicKeyAlgorithm.valueOf)
 
 enum CompressionAlgorithm:
     case `none`
     case `zlib`
 
-    given reader as SshReader[CompressionAlgorithm] =
-        SshReader[String].map(CompressionAlgorithm.valueOf)
+    given reader as SSHReader[CompressionAlgorithm] =
+        SSHReader[String].map(CompressionAlgorithm.valueOf)

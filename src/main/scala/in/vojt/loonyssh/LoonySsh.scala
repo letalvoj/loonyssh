@@ -4,10 +4,10 @@ import java.net._
 import java.io._
 import scala.io.Source
 import java.nio.ByteBuffer
+import scala.deriving._
 import scala.compiletime.{constValue, summonInline, erasedValue, S}
 import scala.reflect.ClassTag
 
-import scala.deriving._
 
 val IdentificationString = "SSH-2.0-loonySSH_0.0.1\r\n"
 
@@ -31,7 +31,7 @@ val IdentificationString = "SSH-2.0-loonySSH_0.0.1\r\n"
     inStr.readNBytes(1).toSeq // magic
     // inStr.readNBytes(16).toSeq // random
 
-    println(summon[SshReader[SSHMsg.KexInit]].read(inStr))
+    println(summon[SSHReader[SSHMsg.KexInit]].read(inStr))
 
     println(LazyList.continually(inStr.read).takeWhile(_ => inStr.available() > 0).toList)
 

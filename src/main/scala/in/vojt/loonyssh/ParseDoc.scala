@@ -5,7 +5,7 @@ import scala.io.Source
 import java.io._
 
 val url = "https://raw.githubusercontent.com/openssh/openssh-portable/master/PROTOCOL"
-val namePrefix = "Ssh"
+val namePrefix = "SSH"
 val out = s"src/main/scala/in.vojt.loonyssh/$namePrefix.scala"
 
 val pw = new PrintWriter(new File(out))
