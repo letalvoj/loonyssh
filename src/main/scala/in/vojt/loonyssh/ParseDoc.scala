@@ -1,3 +1,5 @@
+package in.vojt.loonyshh
+
 import scala.io.Source
 
 import java.io._
