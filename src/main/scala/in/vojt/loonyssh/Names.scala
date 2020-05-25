@@ -151,17 +151,11 @@ enum Service:
     case `ssh-userauth`
     case `ssh-connection`
 
-    inline given reader as SSHReader[Service] =
-        SSHReader[String].map(Service.valueOf)
-
 enum AuthenticationMethod:
     case `publickey`
     case `password`
     case `hostBased`
     case `none`
-
-    inline given reader as SSHReader[AuthenticationMethod] =
-        SSHReader[String].map(AuthenticationMethod.valueOf)
 
 enum ConnectionProtocolChannelType:
     case `session`
@@ -169,15 +163,9 @@ enum ConnectionProtocolChannelType:
     case `forwarded-tcpip`
     case `direct-tcpip`
 
-    given reader as SSHReader[ConnectionProtocolChannelType] =
-        SSHReader[String].map(ConnectionProtocolChannelType.valueOf)
-
 enum ConnectionProtocolRequestType:
     case `tcpip-forward`
     case `cancel-tcpip-forward`
-
-    given reader as SSHReader[ConnectionProtocolRequestType] =
-        SSHReader[String].map(ConnectionProtocolRequestType.valueOf)
 
 enum ConnectionProtocolChannelRequestName:
     case `pty-req`
@@ -191,9 +179,6 @@ enum ConnectionProtocolChannelRequestName:
     case `signal`
     case `exit-status`
     case `exit-signal`
-
-    given reader as SSHReader[ConnectionProtocolChannelRequestName] =
-        SSHReader[String].map(ConnectionProtocolChannelRequestName.valueOf)
 
 enum SignalName:
     case `ABRT`
@@ -210,15 +195,9 @@ enum SignalName:
     case `USR1`
     case `USR2`
 
-    given reader as SSHReader[SignalName] =
-        SSHReader[String].map(SignalName.valueOf)
-
 enum KeyExchangeMethod:
     case `diffie-hellman-group1-sha1`
     case `diffie-hellman-group14-sha1`
-
-    given reader as SSHReader[KeyExchangeMethod] =
-        SSHReader[String].map(KeyExchangeMethod.valueOf)
 
 enum EncryptionAlgorithm:
     case `3des-cbc`
@@ -239,9 +218,6 @@ enum EncryptionAlgorithm:
     case `des-cbc`
     case `none`
 
-    given reader as SSHReader[EncryptionAlgorithm] =
-        SSHReader[String].map(EncryptionAlgorithm.valueOf)
-
 enum MACAlgorithm:
     case `hmac-sha1`           
     case `hmac-sha1-96`        
@@ -249,21 +225,41 @@ enum MACAlgorithm:
     case `hmac-md5-96`         
     case `none`                
 
-    given reader as SSHReader[MACAlgorithm] =
-        SSHReader[String].map(MACAlgorithm.valueOf)
-
 enum PublicKeyAlgorithm:
     case `ssh-dss`     
     case `ssh-rsa`     
     case `pgp-sign-rsa`
     case `pgp-sign-dss`
 
-    given reader as SSHReader[PublicKeyAlgorithm] =
-        SSHReader[String].map(PublicKeyAlgorithm.valueOf)
-
 enum CompressionAlgorithm:
     case `none`
     case `zlib`
+    case `zlib@openssh.com`
 
-    given reader as SSHReader[CompressionAlgorithm] =
-        SSHReader[String].map(CompressionAlgorithm.valueOf)
+enum Encryption:
+     case `aes128-ctr`
+     case `aes192-ctr`
+     case `aes256-ctr`
+     case `3des-ctr`
+     case `blowfish-ctr`
+     case `twofish128-ctr`
+     case `twofish192-ctr`
+     case `twofish256-ctr`
+     case `serpent128-ctr`
+     case `serpent192-ctr`
+     case `serpent256-ctr`
+     case `idea-ctr`
+     case `cast128-ctr`
+
+
+type Known[V] = String Either V
+
+@main
+def names() = 
+    import java.io._
+    import java.nio.ByteBuffer
+    
+    val data = ByteBuffer.allocate(4).putInt(4).array ++ Array[Char]('z','l','i','b').map(_.toByte)  
+    val bis = new ByteArrayInputStream(data)
+    val buf = new BufferedInputStream(bis)
+    println(SSHReader[NameList[Known[CompressionAlgorithm]]].read(buf))

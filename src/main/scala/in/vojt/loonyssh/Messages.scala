@@ -95,16 +95,16 @@ enum SSHMsg[M<:Int]:
     */
     case KexInit(
         cookie: LSeq[16,Byte],
-        kexAlgorithms: NameList,
-        serverHostKeyAlgorithms: NameList,
-        encryptionAlgorithmsClientToServer: NameList,
-        encryptionAlgorithmsServerToClient: NameList,
-        macAlgorithmsClientToServer: NameList,
-        macAlgorithmsServerToClient: NameList,
-        compressionAlgorithmsClientToServer: NameList,
-        compressionAlgorithmsServerToClient: NameList,
-        languagesClientToServer: NameList,
-        languagesServerToClient: NameList,
+        kexAlgorithms: PlainNameList,
+        serverHostKeyAlgorithms: PlainNameList,
+        encryptionAlgorithmsClientToServer: PlainNameList,
+        encryptionAlgorithmsServerToClient: PlainNameList,
+        macAlgorithmsClientToServer: PlainNameList,
+        macAlgorithmsServerToClient: PlainNameList,
+        compressionAlgorithmsClientToServer: PlainNameList,
+        compressionAlgorithmsServerToClient: PlainNameList,
+        languagesClientToServer: PlainNameList,
+        languagesServerToClient: PlainNameList,
         kexFirstPacketFollows: Byte,
         reserved: Int) extends SSHMsg[Magic.KexInit]
 

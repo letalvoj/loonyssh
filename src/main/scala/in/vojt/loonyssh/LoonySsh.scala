@@ -5,7 +5,7 @@ import java.io._
 import scala.io.Source
 import java.nio.ByteBuffer
 import scala.deriving._
-import scala.compiletime.{constValue, summonInline, erasedValue, S}
+import scala.compiletime._
 import scala.reflect.ClassTag
 
 

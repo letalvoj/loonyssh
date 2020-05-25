@@ -28,7 +28,11 @@ object SSHReader:
     given byteReader as SSHReader[Byte] = is => is.read().toByte
 
     inline def arrayReader(n:Int) = new SSHReader[Array[Byte]]:
-        def read(is: BufferedInputStream): Array[Byte] = is.readNBytes(n)
+        def read(is: BufferedInputStream): Array[Byte] =
+            val bytes = is.readNBytes(n)
+            println(n)
+            println(bytes.toSeq)
+            bytes
 
     given stringReader as SSHReader[String] = for {
         n <- SSHReader[Int]
@@ -48,3 +52,22 @@ object SSHReader:
     inline private def readProduct[T](is: BufferedInputStream)(i:Int):Tuple = inline erasedValue[T] match
         case _: (t *: ts) => summonInline[SSHReader[t]].read(is) *: readProduct[ts](is)(i+1)
         case _: Unit => ()
+
+    inline given enumReader[V <: Enum](using e:EnumSupport[V]) as SSHReader[V] = {
+        SSHReader[String].map(x => {
+            println(x)
+            println(e.fromName.get(x))
+            e.fromName(x)
+        })
+    }
+
+    given plain as SSHReader[NameList[String]] = 
+        SSHReader[String].map(s => NameList(s.split(",").toList))
+
+    inline given enumerated[V <: Enum : ClassTag](using e: EnumSupport[V]) as SSHReader[NameList[V]] =
+        SSHReader[String].map(s => NameList(s.split(",").map(e.fromName(_)).toList))
+
+    inline given known[V <: Enum : ClassTag](using e: EnumSupport[V]) as SSHReader[NameList[Known[V]]] =
+        SSHReader[String].map(s => NameList(s.split(",").map(name => {
+            e.fromName.get(name).map(Right(_)).getOrElse(Left(name))
+        }).toList))

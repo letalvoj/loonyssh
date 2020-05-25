@@ -12,10 +12,11 @@ import scala.reflect.ClassTag
     contain a comma (",").  As this is a list of names, all of the
     elements contained are names and MUST be in US-ASCII.
 */
-case class NameList(names:List[String])
+case class NameList[V](names:List[V])
 
-object NameList:
-    given reader as SSHReader[NameList] = SSHReader[String].map(s => NameList(s.split(",").toList))
+type PlainNameList = NameList[String]
+
+object NameList
 
 
 opaque type LSeq[L<:Int, V] = Seq[V]
