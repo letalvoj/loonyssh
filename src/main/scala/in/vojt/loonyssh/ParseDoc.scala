@@ -35,7 +35,7 @@ def process(stream:List[String], constants:List[(String,String)]):Unit = stream 
         val (m,r) = parseClass(t, parseName(h), Nil)
         pw.println(s"\n$m\n")
         process(r, constants)
-    case h :: t  => 
+    case h :: t  =>
         pw.println("// "+h)
         process(t, constants)
     case _ =>
@@ -46,7 +46,7 @@ def process(stream:List[String], constants:List[(String,String)]):Unit = stream 
         |""".stripMargin)
 
 def parseClass(stream:List[String], name:String, params:List[(String,String)]):(String, List[String]) = stream match
-    case h :: t if h matches "^\t.*"   => 
+    case h :: t if h matches "^\t.*"   =>
         pw.println("// "+h)
         parseClass(t,name,parseParam(h) :: params)
     case _  =>
@@ -58,9 +58,10 @@ def composeCaseClass(name:String, params:List[(String,String)]):String =
 
 def className(arr:String):String = arr.split('_').map(_.toLowerCase.capitalize).mkString
 
-def paramName(arr:Seq[String]):String = 
+def paramName(arr:Seq[String]):String =
     arr.toList match
         case h :: t => h + t.map(_.capitalize).mkString
+        case Nil => ""
 
 def parseDefine(line:String):Option[(String, String)] =
     line.trim.split("\\s+") match
@@ -83,9 +84,9 @@ def parseName(line:String):String =
     name
 
 def psvm() =
-    val lines = Source.fromURL(url).getLines.toList
-    
+    val lines = Source.fromURL(url).getLines.toLis
+
     process(lines, List.empty)
     pw.flush()
     pw.close()
-    
+

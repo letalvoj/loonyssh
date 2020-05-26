@@ -4,36 +4,37 @@ import in.vojt.loonyshh.names._
 
 /**
     https://tools.ietf.org/html/rfc4250#section-4.1.2
-*/    
+*/
 object Magic:
-    type Disconnect              =   1
-    type Ignore                  =   2
-    type Unimplemented           =   3
-    type Debug                   =   4
-    type ServiceRequest          =   5
-    type ServiceAccept           =   6
-    type KexInit                 =  20
-    type NewKeys                 =  21
-    type UserauthRequest         =  50
-    type UserauthFailure         =  51
-    type UserauthSuccess         =  52
-    type UserauthBanner          =  53
-    type GlobalRequest           =  80
-    type RequestSuccess          =  81
-    type RequestFailure          =  82
-    type ChannelOpen             =  90
-    type ChannelOpenConfirmation =  91
-    type ChannelOpenFailure      =  92
-    type ChannelWindowAdjust     =  93
-    type ChannelData             =  94
-    type ChannelExtendedData     =  95
-    type ChannelEof              =  96
-    type ChannelClose            =  97
-    type ChannelRequest          =  98
-    type ChannelSuccess          =  99
-    type ChannelFailure          = 100
+    val Disconnect              =   1
+    val Ignore                  =   2
+    val Unimplemented           =   3
+    val Debug                   =   4
+    val ServiceRequest          =   5
+    val ServiceAccept           =   6
+    val KexInit                 =  20
+    val NewKeys                 =  21
+    val UserauthRequest         =  50
+    val UserauthFailure         =  51
+    val UserauthSuccess         =  52
+    val UserauthBanner          =  53
+    val GlobalRequest           =  80
+    val RequestSuccess          =  81
+    val RequestFailure          =  82
+    val ChannelOpen             =  90
+    val ChannelOpenConfirmation =  91
+    val ChannelOpenFailure      =  92
+    val ChannelWindowAdjust     =  93
+    val ChannelData             =  94
+    val ChannelExtendedData     =  95
+    val ChannelEof              =  96
+    val ChannelClose            =  97
+    val ChannelRequest          =  98
+    val ChannelSuccess          =  99
+    val ChannelFailure          = 100
 
-enum SSHMsg[M<:Int]:
+enum SSHMsg(val magic:Int):
+
 
     /**
         byte      SSH_MSG_DISCONNECT
@@ -41,19 +42,19 @@ enum SSHMsg[M<:Int]:
         string    description in ISO-10646 UTF-8 encoding [RFC3629]
         string    language tag [RFC3066]
     */
-    case Disconnect(code: DisconnectCode, description: String, language: String) extends SSHMsg[Magic.Disconnect]
+    case Disconnect(code: DisconnectCode, description: String, language: String) extends SSHMsg(Magic.Disconnect)
 
     /**
         byte      SSH_MSG_IGNORE
         string    data
     */
-    case Ignore(data:String)          extends SSHMsg[Magic.Ignore]
+    case Ignore(data:String)          extends SSHMsg(Magic.Ignore)
 
     /**
         byte      SSH_MSG_UNIMPLEMENTED
         uint32    packet sequence number of rejected message
     */
-    case Unimplemented(packetSequenceNumber:Int) extends SSHMsg[Magic.Unimplemented]
+    case Unimplemented(packetSequenceNumber:Int) extends SSHMsg(Magic.Unimplemented)
 
     /**
         byte      SSH_MSG_DEBUG
@@ -65,19 +66,19 @@ enum SSHMsg[M<:Int]:
         alwaysDisplay: Boolean,
         message: String,
         language: String,
-    ) extends SSHMsg[Magic.Debug]
+    ) extends SSHMsg(Magic.Debug)
 
     /**
         byte      SSH_MSG_SERVICE_REQUEST
         string    service name
     */
-    case ServiceRequest(serviceName: String) extends SSHMsg[Magic.ServiceRequest]
+    case ServiceRequest(serviceName: String) extends SSHMsg(Magic.ServiceRequest)
 
     /**
         byte      SSH_MSG_SERVICE_ACCEPT
         string    service name
     */
-    case ServiceAccept(serviceName: String) extends SSHMsg[Magic.ServiceAccept]
+    case ServiceAccept(serviceName: String) extends SSHMsg(Magic.ServiceAccept)
 
     /**
         byte         SSH_MSG_KEXINIT
@@ -85,35 +86,35 @@ enum SSHMsg[M<:Int]:
         name-list    kex_algorithms
         name-list    server_host_key_algorithms
         name-list    encryption_algorithms_client_to_server
-        name-list    encryption_algorithms_server_to_client
+        name-list    encryption_algorithms_server_to_clien
         name-list    mac_algorithms_client_to_server
-        name-list    mac_algorithms_server_to_client
+        name-list    mac_algorithms_server_to_clien
         name-list    compression_algorithms_client_to_server
-        name-list    compression_algorithms_server_to_client
+        name-list    compression_algorithms_server_to_clien
         name-list    languages_client_to_server
-        name-list    languages_server_to_client
+        name-list    languages_server_to_clien
         boolean      first_kex_packet_follows
         uint32       0 (reserved for future extension)
     */
     case KexInit(
         cookie: LSeq[16,Byte],
-        kexAlgorithms: PlainNameList,
-        serverHostKeyAlgorithms: PlainNameList,
-        encryptionAlgorithmsClientToServer: PlainNameList, // NameList[EncryptionAlgorithm],
-        encryptionAlgorithmsServerToClient: PlainNameList, // NameList[EncryptionAlgorithm],
-        macAlgorithmsClientToServer: PlainNameList,
-        macAlgorithmsServerToClient: PlainNameList,
-        compressionAlgorithmsClientToServer: PlainNameList,
-        compressionAlgorithmsServerToClient: PlainNameList,
-        languagesClientToServer: PlainNameList,
-        languagesServerToClient: PlainNameList,
+        kexAlgorithms: NameList[String],
+        serverHostKeyAlgorithms: NameList[String],
+        encryptionAlgorithmsClientToServer: NameList[EncryptionAlgorithm],
+        encryptionAlgorithmsServerToClient: NameList[String],
+        macAlgorithmsClientToServer: NameList[String],
+        macAlgorithmsServerToClient: NameList[String],
+        compressionAlgorithmsClientToServer: NameList[String],
+        compressionAlgorithmsServerToClient: NameList[String],
+        languagesClientToServer: NameList[String],
+        languagesServerToClient: NameList[String],
         kexFirstPacketFollows: Byte,
-        reserved: Int) extends SSHMsg[Magic.KexInit]
+        reserved: Int) extends SSHMsg(Magic.KexInit)
 
     /**
         byte      SSH_MSG_NEWKEYS
     */
-    case NewKeys extends SSHMsg[Magic.NewKeys]
+    case NewKeys extends SSHMsg(Magic.NewKeys)
 
 /**
       uint32    packet_length
@@ -122,4 +123,4 @@ enum SSHMsg[M<:Int]:
       byte[n2]  random padding; n2 = padding_length
       byte[m]   mac (Message Authentication Code - MAC); m = mac_length
 */
-case class Envelope[V](length:Int, paddingLength:Int, payload:V, mac:Array[Byte])
+case class Envelope[V](length:Int, paddingLength:Byte, payload:V, mac:Array[Byte])

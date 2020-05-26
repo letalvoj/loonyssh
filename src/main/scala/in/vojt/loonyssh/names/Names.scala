@@ -30,72 +30,72 @@ enum ChannelOpenFailure(val code:Int):
 object ChannelOpenFailure extends SSHReader.ByKey[ChannelOpenFailure, Int](_.code)
 
 enum PseudoTerminalModes(val code:Int):
-    /** Indicates end of options. */    
-    case TTY_OP_END       extends PseudoTerminalModes(0)  
+    /** Indicates end of options. */
+    case TTY_OP_END       extends PseudoTerminalModes(0)
     /** Interrupt character; 255 if none.  Similarly for the other characters.  Not all of these characters are supported on all systems. */
-    case VINTR            extends PseudoTerminalModes(1)       
+    case VINTR            extends PseudoTerminalModes(1)
     /** The quit character (sends SIGQUIT signal on POSIX systems). */
-    case VQUIT            extends PseudoTerminalModes(2)       
+    case VQUIT            extends PseudoTerminalModes(2)
     /** Erase the character to left of the cursor. */
-    case VERASE           extends PseudoTerminalModes(3)      
+    case VERASE           extends PseudoTerminalModes(3)
     /** Kill the current input line. */
-    case VKILL            extends PseudoTerminalModes(4)       
+    case VKILL            extends PseudoTerminalModes(4)
     /** End-of-file character (sends EOF from the terminal). */
-    case VEOF             extends PseudoTerminalModes(5)        
+    case VEOF             extends PseudoTerminalModes(5)
     /** End-of-line character in addition to carriage return and/or linefeed. */
-    case VEOL             extends PseudoTerminalModes(6)        
+    case VEOL             extends PseudoTerminalModes(6)
     /** Additional end-of-line character. */
-    case VEOL2            extends PseudoTerminalModes(7)       
+    case VEOL2            extends PseudoTerminalModes(7)
     /** Continues paused output (normally control-Q). */
-    case VSTART           extends PseudoTerminalModes(8)      
+    case VSTART           extends PseudoTerminalModes(8)
     /** Pauses output (normally control-S). */
-    case VSTOP            extends PseudoTerminalModes(9)       
+    case VSTOP            extends PseudoTerminalModes(9)
     /** Suspends the current program. */
-    case VSUSP            extends PseudoTerminalModes(10)       
+    case VSUSP            extends PseudoTerminalModes(10)
     /** Another suspend character. */
-    case VDSUSP           extends PseudoTerminalModes(11)      
+    case VDSUSP           extends PseudoTerminalModes(11)
     /** Reprints the current input line. */
-    case VREPRINT         extends PseudoTerminalModes(12)    
+    case VREPRINT         extends PseudoTerminalModes(12)
     /** Erases a word left of cursor. */
-    case VWERASE          extends PseudoTerminalModes(13)     
+    case VWERASE          extends PseudoTerminalModes(13)
     /** Enter the next character typed literally, even if it is a special character */
-    case VLNEXT           extends PseudoTerminalModes(14)      
+    case VLNEXT           extends PseudoTerminalModes(14)
     /** Character to flush output. */
-    case VFLUSH           extends PseudoTerminalModes(15)      
+    case VFLUSH           extends PseudoTerminalModes(15)
     /** Switch to a different shell layer. */
-    case VSWTCH           extends PseudoTerminalModes(16)      
+    case VSWTCH           extends PseudoTerminalModes(16)
     /** Prints system status line (load, command, pid, etc). */
-    case VSTATUS          extends PseudoTerminalModes(17)     
+    case VSTATUS          extends PseudoTerminalModes(17)
     /** Toggles the flushing of terminal output. */
-    case VDISCARD         extends PseudoTerminalModes(18)    
+    case VDISCARD         extends PseudoTerminalModes(18)
     /** The ignore parity flag.  The parameter SHOULD be 0 if this flag is FALSE, and 1 if it is TRUE. */
-    case IGNPAR           extends PseudoTerminalModes(30)      
+    case IGNPAR           extends PseudoTerminalModes(30)
     /** Mark parity and framing errors. */
-    case PARMRK           extends PseudoTerminalModes(31)      
+    case PARMRK           extends PseudoTerminalModes(31)
     /** Enable checking of parity errors. */
-    case INPCK            extends PseudoTerminalModes(32)       
+    case INPCK            extends PseudoTerminalModes(32)
     /** Strip 8th bit off characters. */
-    case ISTRIP           extends PseudoTerminalModes(33)      
+    case ISTRIP           extends PseudoTerminalModes(33)
     /** Map NL into CR on input. */
-    case INLCR            extends PseudoTerminalModes(34)       
+    case INLCR            extends PseudoTerminalModes(34)
     /** Ignore CR on input. */
-    case IGNCR            extends PseudoTerminalModes(35)       
+    case IGNCR            extends PseudoTerminalModes(35)
     /** Map CR to NL on input. */
-    case ICRNL            extends PseudoTerminalModes(36)       
+    case ICRNL            extends PseudoTerminalModes(36)
     /** Translate uppercase characters to lowercase. */
-    case IUCLC            extends PseudoTerminalModes(37)       
+    case IUCLC            extends PseudoTerminalModes(37)
     /** Enable output flow control. */
-    case IXON             extends PseudoTerminalModes(38)        
+    case IXON             extends PseudoTerminalModes(38)
     /** Any char will restart after stop. */
-    case IXANY            extends PseudoTerminalModes(39)       
+    case IXANY            extends PseudoTerminalModes(39)
     /** Enable input flow control. */
-    case IXOFF            extends PseudoTerminalModes(40)       
+    case IXOFF            extends PseudoTerminalModes(40)
     /** Ring bell on input queue full. */
-    case IMAXBEL          extends PseudoTerminalModes(41)     
+    case IMAXBEL          extends PseudoTerminalModes(41)
     /** Enable signals INTR, QUIT, [D]SUSP. */
-    case ISIG             extends PseudoTerminalModes(50)        
+    case ISIG             extends PseudoTerminalModes(50)
     /** Canonicalize input lines. */
-    case ICANON           extends PseudoTerminalModes(51)      
+    case ICANON           extends PseudoTerminalModes(51)
     /** Enable input and output of uppercase characters by preceding their lowercase equivalents with "\". */
     case XCASE            extends PseudoTerminalModes(52)
     /** Enable echoing. */
@@ -196,6 +196,7 @@ enum SignalName:
 enum KeyExchangeMethod:
     case `diffie-hellman-group1-sha1`
     case `diffie-hellman-group14-sha1`
+    case Unknown(value:String)
 
 enum EncryptionAlgorithm:
     case `3des-cbc`
@@ -215,39 +216,24 @@ enum EncryptionAlgorithm:
     case `cast128-cbc`
     case `des-cbc`
     case `none`
+    case Unknown(value:String)
 
 enum MACAlgorithm:
-    case `hmac-sha1`           
-    case `hmac-sha1-96`        
-    case `hmac-md5`            
-    case `hmac-md5-96`         
-    case `none`                
+    case `hmac-sha1`
+    case `hmac-sha1-96`
+    case `hmac-md5`
+    case `hmac-md5-96`
+    case `none`
+    case Unknown(value:String)
 
 enum PublicKeyAlgorithm:
-    case `ssh-dss`     
-    case `ssh-rsa`     
+    case `ssh-dss`
+    case `ssh-rsa`
     case `pgp-sign-rsa`
     case `pgp-sign-dss`
+    case Unknown(value:String)
 
 enum CompressionAlgorithm:
     case `none`
     case `zlib`
-
-type Known[V] = String Either V
-
-@main
-def psvm() = 
-    import java.io._
-    import java.nio.ByteBuffer
-    import in.vojt.loonyshh._
-    
-    val data = 
-        ByteBuffer.allocate(4).putInt(1).array ++
-        ByteBuffer.allocate(4).putInt(4).array ++
-         "zlib".getBytes
-
-    val bis = new ByteArrayInputStream(data)
-    val buf = new BufferedInputStream(bis)
-
-    println(SSHReader[DisconnectCode].read(buf))
-    println(SSHReader[NameList[Known[CompressionAlgorithm]]].read(buf))
+    case Unknown(value:String)

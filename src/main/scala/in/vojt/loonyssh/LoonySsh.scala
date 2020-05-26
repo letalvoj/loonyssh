@@ -16,7 +16,7 @@ val IdentificationString = "SSH-2.0-loonySSH_0.0.1\r\n"
 
     val inStr = new BufferedInputStream(socket.getInputStream)
     val outStr = socket.getOutputStream
-    
+
     outStr.write(IdentificationString.getBytes)
     outStr.flush
 
@@ -31,12 +31,14 @@ val IdentificationString = "SSH-2.0-loonySSH_0.0.1\r\n"
     inStr.readNBytes(1).toSeq // magic
     // inStr.readNBytes(16).toSeq // random
 
-    println(summon[SSHReader[SSHMsg.KexInit]].read(inStr))
+    val kex = summon[SSHReader[SSHMsg.KexInit]].read(inStr)
+    println(kex)
+
+    println(kex.map(_.encryptionAlgorithmsClientToServer))
 
     println(LazyList.continually(inStr.read).takeWhile(_ => inStr.available() > 0).toList)
 
     // println("\ndone!")
-
     // println(Envelope(inStr))
 
     outStr.flush
