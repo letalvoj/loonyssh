@@ -1,4 +1,6 @@
-package in.vojt.loonyshh
+package in.vojt.loonyshh.names
+
+import in.vojt.loonyshh.SSHReader
 
 enum DisconnectCode(val code:Int):
     case HostNotAllowedToConnect     extends DisconnectCode(1)
@@ -17,8 +19,7 @@ enum DisconnectCode(val code:Int):
     case NoMoreAuthMethodsAvailable  extends DisconnectCode(14)
     case IllegalUserName             extends DisconnectCode(15)
 
-    val ByCode = DisconnectCode.values.map(obj => (obj.code, obj)).toMap
-    given reader as SSHReader[DisconnectCode] = SSHReader[Int].map(ByCode(_))
+object DisconnectCode extends SSHReader.ByKey[DisconnectCode, Int](_.code)
 
 enum ChannelOpenFailure(val code:Int):
     case ADMINISTRATIVELY_PROHIBITED extends ChannelOpenFailure(1)
@@ -26,8 +27,7 @@ enum ChannelOpenFailure(val code:Int):
     case UNKNOWN_CHANNEL_TYPE        extends ChannelOpenFailure(3)
     case RESOURCE_SHORTAGE           extends ChannelOpenFailure(4)
 
-    val ByCode = ChannelOpenFailure.values.map(obj => (obj.code, obj)).toMap
-    given reader as SSHReader[ChannelOpenFailure] = SSHReader[Int].map(ByCode(_))
+object ChannelOpenFailure extends SSHReader.ByKey[ChannelOpenFailure, Int](_.code)
 
 enum PseudoTerminalModes(val code:Int):
     /** Indicates end of options. */    
@@ -143,9 +143,7 @@ enum PseudoTerminalModes(val code:Int):
     /** Specifies the output baud rate in bits per second. */
     case TTY_OP_OSPEED    extends PseudoTerminalModes(129)
 
-    val ByCode = PseudoTerminalModes.values.map(obj => (obj.code, obj)).toMap
-    given reader as SSHReader[PseudoTerminalModes] = SSHReader[Int].map(ByCode(_))
-
+object PseudoTerminalModes extends SSHReader.ByKey[PseudoTerminalModes, Int](_.code)
 
 enum Service:
     case `ssh-userauth`
@@ -234,32 +232,22 @@ enum PublicKeyAlgorithm:
 enum CompressionAlgorithm:
     case `none`
     case `zlib`
-    case `zlib@openssh.com`
-
-enum Encryption:
-     case `aes128-ctr`
-     case `aes192-ctr`
-     case `aes256-ctr`
-     case `3des-ctr`
-     case `blowfish-ctr`
-     case `twofish128-ctr`
-     case `twofish192-ctr`
-     case `twofish256-ctr`
-     case `serpent128-ctr`
-     case `serpent192-ctr`
-     case `serpent256-ctr`
-     case `idea-ctr`
-     case `cast128-ctr`
-
 
 type Known[V] = String Either V
 
 @main
-def names() = 
+def psvm() = 
     import java.io._
     import java.nio.ByteBuffer
+    import in.vojt.loonyshh._
     
-    val data = ByteBuffer.allocate(4).putInt(4).array ++ Array[Char]('z','l','i','b').map(_.toByte)  
+    val data = 
+        ByteBuffer.allocate(4).putInt(1).array ++
+        ByteBuffer.allocate(4).putInt(4).array ++
+         "zlib".getBytes
+
     val bis = new ByteArrayInputStream(data)
     val buf = new BufferedInputStream(bis)
+
+    println(SSHReader[DisconnectCode].read(buf))
     println(SSHReader[NameList[Known[CompressionAlgorithm]]].read(buf))

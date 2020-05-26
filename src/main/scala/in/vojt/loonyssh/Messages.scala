@@ -1,5 +1,7 @@
 package in.vojt.loonyshh
 
+import in.vojt.loonyshh.names._
+
 /**
     https://tools.ietf.org/html/rfc4250#section-4.1.2
 */    
@@ -97,8 +99,8 @@ enum SSHMsg[M<:Int]:
         cookie: LSeq[16,Byte],
         kexAlgorithms: PlainNameList,
         serverHostKeyAlgorithms: PlainNameList,
-        encryptionAlgorithmsClientToServer: PlainNameList,
-        encryptionAlgorithmsServerToClient: PlainNameList,
+        encryptionAlgorithmsClientToServer: PlainNameList, // NameList[EncryptionAlgorithm],
+        encryptionAlgorithmsServerToClient: PlainNameList, // NameList[EncryptionAlgorithm],
         macAlgorithmsClientToServer: PlainNameList,
         macAlgorithmsServerToClient: PlainNameList,
         compressionAlgorithmsClientToServer: PlainNameList,

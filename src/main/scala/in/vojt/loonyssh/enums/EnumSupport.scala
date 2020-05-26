@@ -1,4 +1,4 @@
-package in.vojt.loonyshh
+package in.vojt.loonyshh.enums
 
 import scala.deriving._
 import scala.compiletime._
@@ -7,6 +7,7 @@ case object Product0 extends Product
 
 trait EnumSupport[E<:Enum]:
     def fromName:Map[String, E]
+    def fromParam:Map[String, E] = ???
 
 object EnumSupport:
     inline given values[E<:Enum](using m: Mirror.SumOf[E]) as EnumSupport[E] = new EnumSupport:
