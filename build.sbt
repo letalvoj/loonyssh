@@ -1,7 +1,7 @@
 // val dottyVersion = "0.24.0-RC1"
 val dottyVersion = dottyLatestNightlyBuild.get
 
-scalacOptions ++= List("-verbose","-Ydebug")
+// scalacOptions ++= List("-verbose","-Ydebug")
 scalacOptions in (Compile, console) += "-Xprint:typer"
 
 lazy val root = project
