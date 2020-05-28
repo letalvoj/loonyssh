@@ -72,7 +72,7 @@ object SSHReader:
         def read(is: BufferedInputStream): ErrOr[V] = e
 
     given intReader as SSHReader[Int] = is => ErrOr exception {
-        ByteBuffer.wrap(is.readNBytes(4)).getIn
+        ByteBuffer.wrap(is.readNBytes(4)).getInt
     }
 
     given byteReader as SSHReader[Byte] = is => ErrOr exception {

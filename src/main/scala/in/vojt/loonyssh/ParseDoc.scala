@@ -84,7 +84,7 @@ def parseName(line:String):String =
     name
 
 def psvm() =
-    val lines = Source.fromURL(url).getLines.toLis
+    val lines = Source.fromURL(url).getLines.toList
 
     process(lines, List.empty)
     pw.flush()
