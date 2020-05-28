@@ -100,7 +100,7 @@ enum SSHMsg(val magic:Int):
         cookie: LSeq[16,Byte],
         kexAlgorithms: NameList[String],
         serverHostKeyAlgorithms: NameList[String],
-        encryptionAlgorithmsClientToServer: NameList[EncryptionAlgorithm],
+        encryptionAlgorithmsClientToServer: NameList[String],
         encryptionAlgorithmsServerToClient: NameList[String],
         macAlgorithmsClientToServer: NameList[String],
         macAlgorithmsServerToClient: NameList[String],
