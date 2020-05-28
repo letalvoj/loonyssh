@@ -128,15 +128,15 @@ object SSHReader:
     inline private def nameList[V:ClassTag](parse: String => V): SSHReader[NameList[V]] =
         SSHReader[String].map(s => NameList(s.split(",").map(parse).toSeq))
 
-    given nameListReader as SSHReader[NameList[String]] = 
+    given nameListReader as SSHReader[NameList[String]] =
         nameList(identity)
 
     // as of 0.24-RC1 typeclass derivation for enums is a big buggy, the following definitions are not currrently used
 
-    inline given enumReader[V <: Enum](using e:EnumSupport[V]) as SSHReader[V] = 
+    inline given enumReader[V <: Enum](using e:EnumSupport[V]) as SSHReader[V] =
         SSHReader[String].map(parseOrUnknown[V](_))
 
-    inline given nameListEnumReader[V <: Enum: ClassTag](using e: EnumSupport[V]) as SSHReader[NameList[V]] = 
+    inline given nameListEnumReader[V <: Enum: ClassTag](using e: EnumSupport[V]) as SSHReader[NameList[V]] =
         nameList(parseOrUnknown[V](_))
 
     inline def parseOrUnknown[V<:Enum](name:String)(using sup:EnumSupport[V]) =
