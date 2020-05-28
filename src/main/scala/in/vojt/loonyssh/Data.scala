@@ -23,3 +23,7 @@ object NameList:
 opaque type LSeq[L<:Int, V] = Seq[V]
 object LSeq:
     def apply[L<:Int, V](seq:Seq[V]):LSeq[L,V] = seq
+
+    extension on[L<:Int, V] (ls:LSeq[L, V]) {
+        def toSeq:Seq[V] = ls
+    }

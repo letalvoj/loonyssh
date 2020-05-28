@@ -114,12 +114,11 @@ object SSHReader:
             yield
                 LSeq[L,T](l)
 
-    inline given productReader[L<:Int, V<:SSHMsg[L]:ClassTag](using m: Mirror.ProductOf[V]) as SSHReader[V] = new SSHReader:
-        def read(is: BufferedInputStream): ErrOr[V] =
-            println(s"MAGIC: ${is.read} ${summonInline[ClassTag[V]]}")
-            val p = readProduct[m.MirroredElemTypes](is)(0)
-            ErrOr.traverse(p).map(t => m.fromProduct(t.asInstanceOf).asInstanceOf[V])
-
+    inline given productReader[L<:Int, V<:SSHMsg[L]:ClassTag](using m: Mirror.ProductOf[V]) as SSHReader[V] = is => {
+        println(s"MAGIC: ${is.read} ${summonInline[ClassTag[V]]}")
+        val p = readProduct[m.MirroredElemTypes](is)(0)
+        ErrOr.traverse(p).map(t => m.fromProduct(t.asInstanceOf).asInstanceOf[V])
+    }
 
     inline private def readProduct[T](is: BufferedInputStream)(i:Int):Tuple = inline erasedValue[T] match
         case _: (t *: ts) => summonInline[SSHReader[t]].read(is) *: readProduct[ts](is)(i+1)
