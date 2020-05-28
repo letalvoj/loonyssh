@@ -24,12 +24,12 @@ object ErrOr:
         case NonFatal(e:Exception) => Left(Err.Exc(e))
 
     def traverse(t:Tuple):ErrOr[Tuple] = t match
-        case (e:ErrOr[Any]) *: ts =>
+        case e *: ts =>
             for
-                r <- e
+                r <- e.asInstanceOf[ErrOr[_]]
                 rs <- traverse(ts)
             yield r *: rs
-        case _ => Right(())
+        case _:Tuple => Right(())
 
 
     def traverse[T](t:List[ErrOr[T]]):ErrOr[List[T]] = t match
@@ -53,6 +53,22 @@ trait SSHReader[V]: // IO / Reader monad?
             SSHReader.this.read(is).map(f).flatMap(_.read(is))
 
 object SSHReader:
+
+    given packetReader[V:SSHReader] as SSHReader[BinaryPacket[V]] =
+        for
+            lm <- SSHReader[Int]
+            lp <- SSHReader[Byte] // not doing much with this extra info - useful later for shell, right?
+            value <- SSHReader[V]
+            padding <- arrayReader(lp)
+            // mac <- // not yet implemented
+        yield
+            BinaryPacket(lm,lp,value,padding.toSeq, Seq.empty)
+
+    given identificationReader as SSHReader[Identification] = is => ErrOr exception {
+        Identification(new String(
+            LazyList.continually(is.read).takeWhile(_ != '\n').map(_.toByte).toArray
+        ).trim)
+    }
 
     trait ByKey[V <: Enum, K:SSHReader](f:V => K):
         def values: Array[V]
@@ -98,8 +114,9 @@ object SSHReader:
             yield
                 LSeq[L,T](l)
 
-    inline given productReader[V](using m: Mirror.ProductOf[V]) as SSHReader[V] = new SSHReader:
+    inline given productReader[L<:Int, V<:SSHMsg[L]:ClassTag](using m: Mirror.ProductOf[V]) as SSHReader[V] = new SSHReader:
         def read(is: BufferedInputStream): ErrOr[V] =
+            println(s"MAGIC: ${is.read} ${summonInline[ClassTag[V]]}")
             val p = readProduct[m.MirroredElemTypes](is)(0)
             ErrOr.traverse(p).map(t => m.fromProduct(t.asInstanceOf).asInstanceOf[V])
 
@@ -108,18 +125,19 @@ object SSHReader:
         case _: (t *: ts) => summonInline[SSHReader[t]].read(is) *: readProduct[ts](is)(i+1)
         case _: Unit => ()
 
-    given plain as SSHReader[NameList[String]] =
-        SSHReader[String].map(s => NameList(s.split(",")))
+    inline private def nameList[V:ClassTag](parse: String => V): SSHReader[NameList[V]] =
+        SSHReader[String].map(s => NameList(s.split(",").map(parse).toSeq))
 
-    inline given enumReader[V <: Enum](using e:EnumSupport[V]) as SSHReader[V] = {
+    given nameListReader as SSHReader[NameList[String]] = 
+        nameList(identity)
+
+    // as of 0.24-RC1 typeclass derivation for enums is a big buggy, the following definitions are not currrently used
+
+    inline given enumReader[V <: Enum](using e:EnumSupport[V]) as SSHReader[V] = 
         SSHReader[String].map(parseOrUnknown[V](_))
-    }
 
-    inline given nameListEnumReader[V <: Enum : ClassTag](using e: EnumSupport[V]) as SSHReader[NameList[V]] =
-        for
-            names <- SSHReader[String]
-        yield
-            NameList(names.split(",").map(parseOrUnknown[V](_)))
+    inline given nameListEnumReader[V <: Enum: ClassTag](using e: EnumSupport[V]) as SSHReader[NameList[V]] = 
+        nameList(parseOrUnknown[V](_))
 
     inline def parseOrUnknown[V<:Enum](name:String)(using sup:EnumSupport[V]) =
         sup.fromName.get(name).getOrElse(sup.byName("Unknown", Tuple1(name)).get)

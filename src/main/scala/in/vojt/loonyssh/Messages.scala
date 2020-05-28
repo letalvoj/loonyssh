@@ -33,7 +33,7 @@ object Magic:
     val ChannelSuccess          =  99
     val ChannelFailure          = 100
 
-enum SSHMsg(val magic:Int):
+enum SSHMsg[M<:Int](val magic:M):
 
 
     /**
@@ -123,4 +123,9 @@ enum SSHMsg(val magic:Int):
       byte[n2]  random padding; n2 = padding_length
       byte[m]   mac (Message Authentication Code - MAC); m = mac_length
 */
-case class Envelope[V](length:Int, paddingLength:Byte, payload:V, mac:Array[Byte])
+case class BinaryPacket[V](length:Int, paddingLength:Byte, payload:V, padding:Seq[Byte], mac:Seq[Byte])
+
+/**
+  SSH-protoversion-softwareversion SP comments CR LF
+*/
+case class Identification(name:String)

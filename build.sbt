@@ -1,7 +1,7 @@
 // val dottyVersion = "0.24.0-RC1"
 val dottyVersion = dottyLatestNightlyBuild.get
 
-// scalacOptions ++= List("-verbose","-Ydebug")
+scalacOptions ++= List("-verbose") // ,"-Ydebug"
 scalacOptions in (Compile, console) += "-Xprint:typer"
 
 lazy val root = project
@@ -13,7 +13,5 @@ lazy val root = project
     libraryDependencies ++= List(
       "com.novocode" % "junit-interface" % "0.11" % "test",
       "com.jcraft" % "jsch" % "0.1.55",
-      // "dev.zio" %% "izumi-reflect" % "1.0.0-M2", // not available for 0.24
-      // ("org.typelevel" %% "cats-core" % "2.1.1").withDottyCompat(scalaVersion.value),
     )
   )

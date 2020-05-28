@@ -3,6 +3,7 @@ package in.vojt.loonyshh
 import scala.compiletime._
 import java.io._
 import scala.reflect.ClassTag
+import scala.collection.immutable.ArraySeq
 
 /**
     A string containing a comma-separated list of names.  A name-lis
@@ -16,7 +17,8 @@ case class NameList[V](names:Seq[V])
 
 type PlainNameList = NameList[String]
 
-object NameLis
+object NameList:
+    def apply[B](arr:Array[B]):Seq[B] = ArraySeq.unsafeWrapArray(arr)
 
 opaque type LSeq[L<:Int, V] = Seq[V]
 object LSeq:
