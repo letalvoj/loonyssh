@@ -1,7 +1,5 @@
 package in.vojt.loonyshh.names
 
-import in.vojt.loonyshh.SSHReader
-
 enum DisconnectCode(val code:Int):
     case HostNotAllowedToConnect     extends DisconnectCode(1)
     case ProtocolError               extends DisconnectCode(2)
@@ -19,15 +17,11 @@ enum DisconnectCode(val code:Int):
     case NoMoreAuthMethodsAvailable  extends DisconnectCode(14)
     case IllegalUserName             extends DisconnectCode(15)
 
-object DisconnectCode extends SSHReader.ByKey[DisconnectCode, Int](_.code)
-
 enum ChannelOpenFailure(val code:Int):
     case ADMINISTRATIVELY_PROHIBITED extends ChannelOpenFailure(1)
     case CONNECT_FAILED              extends ChannelOpenFailure(2)
     case UNKNOWN_CHANNEL_TYPE        extends ChannelOpenFailure(3)
     case RESOURCE_SHORTAGE           extends ChannelOpenFailure(4)
-
-object ChannelOpenFailure extends SSHReader.ByKey[ChannelOpenFailure, Int](_.code)
 
 enum PseudoTerminalModes(val code:Int):
     /** Indicates end of options. */
@@ -142,8 +136,6 @@ enum PseudoTerminalModes(val code:Int):
     case TTY_OP_ISPEED    extends PseudoTerminalModes(128)
     /** Specifies the output baud rate in bits per second. */
     case TTY_OP_OSPEED    extends PseudoTerminalModes(129)
-
-object PseudoTerminalModes extends SSHReader.ByKey[PseudoTerminalModes, Int](_.code)
 
 enum Service:
     case `ssh-userauth`
