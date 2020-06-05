@@ -13,12 +13,11 @@ import scala.collection.immutable.ArraySeq
     contain a comma (",").  As this is a list of names, all of the
     elements contained are names and MUST be in US-ASCII.
 */
-case class NameList[V](names:Seq[V])
-
-type PlainNameList = NameList[String]
+case class NameList[V](names:V*)
 
 object NameList:
-    def apply[B](arr:Array[B]):Seq[B] = ArraySeq.unsafeWrapArray(arr)
+    inline def fromArr[B](values:Array[B]):NameList[B] = fromSeq(ArraySeq.unsafeWrapArray(values))
+    inline def fromSeq[B](values:Seq[B]):NameList[B] = NameList(values:_*)
 
 opaque type LSeq[L<:Int, V] = Seq[V]
 object LSeq:

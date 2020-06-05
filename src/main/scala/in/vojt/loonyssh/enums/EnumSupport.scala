@@ -11,25 +11,27 @@ trait EnumSupport[E<:Enum]:
 
 object EnumSupport:
     inline given values[E<:Enum](using m: Mirror.SumOf[E]) as EnumSupport[E] = new EnumSupport:
-        override val fromName =
-            _fromName[E, m.MirroredElemTypes, m.MirroredElemLabels](0)
+        
+        override val fromName = 
+            _fromName[E, m.MirroredElemTypes, m.MirroredElemLabels]
         override def byName(name:String, params:Product):Option[E] =
             _byName[E, m.MirroredElemTypes, m.MirroredElemLabels](name, params)
 
-    inline private def _fromName[E<:Enum,T,L](i:Int):Map[String, E] = inline erasedValue[(T,L)] match
-        case _: (Unit, Unit) => Map.empty
+    inline private def _fromName[E<:Enum,T,L]:Map[String, E] = inline erasedValue[(T,L)] match
         case _: (t *: ts, l *: ls) =>
             val key = constValue[l].asInstanceOf[String]
             val mirror = summonInline[Mirror.ProductOf[t]]
+            val additional:Map[String,E] =
+                try
+                    val value = mirror.fromProduct(Product0).asInstanceOf[E]
+                    Map(key -> value)
+                catch
+                    // workaround for https://github.com/lampepfl/dotty/issues/9110
+                    // check whether it got fixed from time to time
+                    case _:IndexOutOfBoundsException => Map.empty
 
-            try
-                val value = mirror.fromProduct(Product0).asInstanceOf[E]
-                _fromName[E,ts,ls](i+1) + (key -> value)
-            catch
-                // ignoring parametric types...
-                // Tuple.Size[mirror.MirrorElemLabels] does not work since the type info gets lost
-                case _:IndexOutOfBoundsException => _fromName[E,ts,ls](i+1)
-
+            _fromName[E,ts,ls] ++ additional
+        case _: (Unit, Unit) => Map.empty
 
 
     inline private def _byName[E<:Enum,T,L](name:String, params:Product):Option[E] = inline erasedValue[(T,L)] match

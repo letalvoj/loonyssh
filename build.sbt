@@ -1,7 +1,8 @@
 // val dottyVersion = "0.24.0-RC1"
-val dottyVersion = dottyLatestNightlyBuild.get
+val dottyVersion = "0.25.0-bin-20200604-2fbefb0-NIGHTLY"
+// val dottyVersion = dottyLatestNightlyBuild.get
 
-scalacOptions ++= List("-verbose") // ,"-Ydebug"
+// scalacOptions ++= List("-verbose") // ,"-Ydebug"
 scalacOptions in (Compile, console) += "-Xprint:typer"
 
 lazy val root = project
@@ -13,5 +14,6 @@ lazy val root = project
     libraryDependencies ++= List(
       "com.novocode" % "junit-interface" % "0.11" % "test",
       "com.jcraft" % "jsch" % "0.1.55",
+      "net.i2p.crypto" % "eddsa" % "0.3.0",
     )
   )

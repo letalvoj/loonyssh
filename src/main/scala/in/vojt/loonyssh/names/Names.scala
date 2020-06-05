@@ -194,46 +194,26 @@ enum SignalName:
     case `USR2`
 
 enum KeyExchangeMethod:
-    case `diffie-hellman-group1-sha1`
-    case `diffie-hellman-group14-sha1`
+    case `ecdh-sha2-nistp256`
     case Unknown(value:String)
 
 enum EncryptionAlgorithm:
-    case `3des-cbc`
-    case `blowfish-cbc`
-    case `twofish256-cbc`
-    case `twofish-cbc`
-    case `twofish192-cbc`
-    case `twofish128-cbc`
-    case `aes256-cbc`
-    case `aes192-cbc`
-    case `aes128-cbc`
-    case `serpent256-cbc`
-    case `serpent192-cbc`
-    case `serpent128-cbc`
-    case `arcfour`
-    case `idea-cbc`
-    case `cast128-cbc`
-    case `des-cbc`
+    case `aes128-ctr`
     case `none`
     case Unknown(value:String)
 
 enum MACAlgorithm:
-    case `hmac-sha1`
-    case `hmac-sha1-96`
+    case `hmac-sha2-256`
     case `hmac-md5`
-    case `hmac-md5-96`
     case `none`
     case Unknown(value:String)
 
 enum PublicKeyAlgorithm:
-    case `ssh-dss`
     case `ssh-rsa`
-    case `pgp-sign-rsa`
-    case `pgp-sign-dss`
+    case `ssh-ed25519`
     case Unknown(value:String)
 
 enum CompressionAlgorithm:
-    case `none`
     case `zlib`
+    case `none`
     case Unknown(value:String)

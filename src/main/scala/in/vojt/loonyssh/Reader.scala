@@ -125,7 +125,7 @@ object SSHReader:
         case _: Unit => ()
 
     inline private def nameList[V:ClassTag](parse: String => V): SSHReader[NameList[V]] =
-        SSHReader[String].map(s => NameList(s.split(",").map(parse).toSeq))
+        SSHReader[String].map(s => NameList.fromArr(s.split(",").map(parse)))
 
     given nameListReader as SSHReader[NameList[String]] =
         nameList(identity)
