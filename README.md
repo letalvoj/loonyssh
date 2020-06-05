@@ -20,6 +20,7 @@ Pure Dotty implementation of SSH protocol.
 - Bootstrap from [`ed25519-java`](https://github.com/str4d/ed25519-java)
     - [ ] `ssh-ed25519`
 
-### DevOps
+### Testing / DevOps
 
 - [ ] Set up Travis / Pipelines
+- [ ] Property Based Testing (Reader <-> Writer)

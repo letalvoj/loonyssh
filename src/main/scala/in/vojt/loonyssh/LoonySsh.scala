@@ -46,17 +46,20 @@ val Kex =
     val kex = SSHReader[BinaryPacket[SSHMsg.KexInit]].read(bis)
     println(s"kex: $kex")
 
-    // TODO property based testing
-    // TESTS bin -> obj -> bin
-    // TESTS obj -> bin -> obj
-
-    // SSHWriter[BinaryPacket[Array[Byte]]].write(SSHWriter.wrap(Kex), outStr)
+    // // Currently fails since the binary packet is not serialized properly
+    // val pos = new PipedOutputStream()
+    // val pis = new PipedInputStream(pos)
+    // val bpis = new BufferedInputStream(pis)
+    // SSHWriter[BinaryPacket[Array[Byte]]].write(SSHWriter.wrap(Kex), pos)
+    // val kexRecoveder = SSHReader[SSHMsg.KexInit].read(pis)
+    // println(kexRecoveder)
+    // pos.close
 
     // println("Remaining:")
-    // LazyList.continually(inStr.read).
+    // LazyList.continually(bis.read).
     //     map(c => (c + 256) % 256).
     //     map(c => f"${c}%02X").
-    //     take(300).
+    //     take(30).
     //     foreach(print)
 
     bos.flush

@@ -15,7 +15,12 @@ import scala.util.control.NonFatal
 
 trait SSHWriter[V]: // IO / Writer monad? then we could you flatmap
     def write(value:V, os: OutputStream): Unit // the os param could be implicit
-
+    
+    // cats &| other FP lib
+    def coMap[W](f:W=>V):SSHWriter[W] = new SSHWriter[W]:
+        def write(value:W, os: OutputStream): Unit =
+            SSHWriter.this.write(f(value),os)
+            
 object SSHWriter:
 
     inline def apply[V](using impl: SSHWriter[V]):SSHWriter[V] = impl
@@ -55,14 +60,25 @@ object SSHWriter:
 
     inline given knownLengthSeqWriter[L<:Int,T](using wr:SSHWriter[Seq[T]]) as SSHWriter[LSeq[L,T]] = (ls, os) => wr.write(ls.toSeq, os)
 
-    inline given productWriter[V](using m: Mirror.ProductOf[V], ct:ClassTag[V]) as SSHWriter[V] = (ls:V, os) => {
+    inline given productWriter[V:ClassTag](using m: Mirror.ProductOf[V]) as SSHWriter[V] = (p:V, os) => {
         // match statement can not be used as of 0.24-RC1
-        if (ls.isInstanceOf[SSHMsg[_]])
-            os.write(ls.asInstanceOf[SSHMsg[_]].magic)
-        writeProduct[m.MirroredElemTypes](ls.asInstanceOf)(os)(0)
+        if (p.isInstanceOf[SSHMsg[_]])
+            os.write(p.asInstanceOf[SSHMsg[_]].magic)
+        writeProduct[m.MirroredElemTypes](p.asInstanceOf)(os)(0)
+    }
+
+    inline given enumWriter[V<:Enum:ClassTag](using w: EnumSupport[V]) as SSHWriter[V] = SSHWriter[String].coMap(w.toName)
+    inline given enumListWriter[V<:Enum:ClassTag](using w: EnumSupport[V]) as SSHWriter[NameList[V]] = SSHWriter[String].coMap{
+        es => es.names.map(w.toName).mkString(",")
     }
 
     inline private def writeProduct[T](p:Product)(os: OutputStream)(i:Int):Unit = inline erasedValue[T] match
+        case _: (t *: ts) =>
+            summonInline[SSHWriter[t]].write(productElement[t](p,i),os)
+            writeProduct[ts](p)(os)(i+1)
+        case _: Unit => ()
+
+    inline private def writeEnum[T](p:Product)(os: OutputStream)(i:Int):Unit = inline erasedValue[T] match
         case _: (t *: ts) =>
             summonInline[SSHWriter[t]].write(productElement[t](p,i),os)
             writeProduct[ts](p)(os)(i+1)

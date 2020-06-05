@@ -41,15 +41,15 @@ object ErrOr:
             yield r :: rs
 
 trait SSHReader[V]: // IO / Reader monad?
-    def read(is: BufferedInputStream): ErrOr[V] // should return ErrOr[V]
+    def read(is: InputStream): ErrOr[V] // should return ErrOr[V]
 
     // cats &| other FP lib
     def map[W](f:V=>W):SSHReader[W] = new SSHReader[W]:
-        def read(is: BufferedInputStream): ErrOr[W] =
+        def read(is: InputStream): ErrOr[W] =
             SSHReader.this.read(is).map(f)
 
     def flatMap[W](f:V=>SSHReader[W]):SSHReader[W] = new SSHReader[W]:
-        def read(is: BufferedInputStream): ErrOr[W] =
+        def read(is: InputStream): ErrOr[W] =
             SSHReader.this.read(is).map(f).flatMap(_.read(is))
 
 object SSHReader:
@@ -82,10 +82,10 @@ object SSHReader:
     inline def apply[V](using impl: SSHReader[V]):SSHReader[V] = impl
 
     inline def pure[V](v:V) = new SSHReader[V]:
-        def read(is: BufferedInputStream): ErrOr[V] = Right(v)
+        def read(is: InputStream): ErrOr[V] = Right(v)
 
     inline def pure[V](e:ErrOr[V]) = new SSHReader[V]:
-        def read(is: BufferedInputStream): ErrOr[V] = e
+        def read(is: InputStream): ErrOr[V] = e
 
     given intReader as SSHReader[Int] = is => ErrOr exception {
         ByteBuffer.wrap(is.readNBytes(4)).getInt
@@ -96,7 +96,7 @@ object SSHReader:
     }
 
     inline def arrayReader(n:Int) = new SSHReader[Array[Byte]]:
-        def read(is: BufferedInputStream): ErrOr[Array[Byte]] =
+        def read(is: InputStream): ErrOr[Array[Byte]] =
             ErrOr exception is.readNBytes(n)
 
     given stringReader as SSHReader[String] =
@@ -106,7 +106,7 @@ object SSHReader:
         yield new String(a)
 
     inline given knownLengthSeqReader[L<:Int, T:ClassTag:SSHReader] as SSHReader[LSeq[L,T]] = new SSHReader:
-        def read(is: BufferedInputStream): ErrOr[LSeq[L, T]] =
+        def read(is: InputStream): ErrOr[LSeq[L, T]] =
             val len = constValue[L]
             val list = List.fill(len)(SSHReader[T].read(is))
             for
@@ -120,7 +120,7 @@ object SSHReader:
         ErrOr.traverse(p).map(t => m.fromProduct(t.asInstanceOf).asInstanceOf[V])
     }
 
-    inline private def readProduct[T](is: BufferedInputStream)(i:Int):Tuple = inline erasedValue[T] match
+    inline private def readProduct[T](is: InputStream)(i:Int):Tuple = inline erasedValue[T] match
         case _: (t *: ts) => summonInline[SSHReader[t]].read(is) *: readProduct[ts](is)(i+1)
         case _: Unit => ()
 

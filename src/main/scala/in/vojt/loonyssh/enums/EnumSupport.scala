@@ -7,6 +7,7 @@ case object Product0
 
 trait EnumSupport[E<:Enum]:
     def fromName:Map[String, E]
+    def toName:Map[E, String]
     def byName(name:String, params:Product):Option[E]
 
 object EnumSupport:
@@ -14,6 +15,9 @@ object EnumSupport:
         
         override val fromName = 
             _fromName[E, m.MirroredElemTypes, m.MirroredElemLabels]
+
+        override val toName = fromName.map((k,v) => (v,k))
+
         override def byName(name:String, params:Product):Option[E] =
             _byName[E, m.MirroredElemTypes, m.MirroredElemLabels](name, params)
 
