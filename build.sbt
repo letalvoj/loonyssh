@@ -15,5 +15,8 @@ lazy val root = project
       "com.novocode" % "junit-interface" % "0.11" % "test",
       "com.jcraft" % "jsch" % "0.1.55",
       "net.i2p.crypto" % "eddsa" % "0.3.0",
+      "org.apache.sshd" % "sshd-core" % "2.4.0",
+      "org.slf4j" % "slf4j-jdk14" % "1.7.30",
+      "org.slf4j" % "slf4j-api" % "1.7.30",
     )
   )
