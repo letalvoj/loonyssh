@@ -17,8 +17,11 @@ enum Err:
 type ErrOr[V] = Either[Err, V]
 
 object ErrOr:
-    def exception[V](value: => V):ErrOr[V] = try Right(value) catch
+    def catchNonFatal[V](value: => V):ErrOr[V] = try Right(value) catch
         case NonFatal(e:Exception) => Left(Err.Exc(e))
+
+    def catchIO[V](value: => V):ErrOr[V] = try Right(value) catch
+        case e:IOException => Left(Err.Exc(e))
 
     def traverse(t:Tuple):ErrOr[Tuple] = t match
         case e *: ts =>

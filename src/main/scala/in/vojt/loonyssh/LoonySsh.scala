@@ -56,8 +56,7 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
 
     println("Remaining:")
     LazyList.continually(bis.read).
-        map(c => (c + 256) % 256).
-        map(c => f"-${c}%02X").
+        map(c => f"${c}%02X-").
         take(30).
         foreach(print)
 
