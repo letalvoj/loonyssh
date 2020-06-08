@@ -16,11 +16,6 @@ import scala.collection.mutable.ArrayBuffer
 trait SSHReader[S]: // IO / State monad?
     def read(t: BinaryParser): ErrOr[S]
 
-    //  // somehow merge it with flatMap?
-    // def flip[N](t: T)(f:S=>ErrOr[(S,N)]):SSHReader[N] = new SSHReader[N]:
-    //     def read(s: S): ErrOr[(S,N)] =
-    //         SSHReader.this.read(t).flatMap((t,s) => f(s))
-
     // cats &| other FP lib
     def map[W](f:S=>W):SSHReader[W] = new SSHReader[W]:
         def read(t: BinaryParser): ErrOr[W] =
@@ -29,6 +24,16 @@ trait SSHReader[S]: // IO / State monad?
     def flatMap[W](f:S=>SSHReader[W]):SSHReader[W] = new SSHReader[W]:
         def read(t: BinaryParser): ErrOr[W] =
             SSHReader.this.read(t).map(f).flatMap(r => r.read(t))
+
+    def fromBinaryPacket:SSHReader[S] = new SSHReader[S]:
+        def read(t: BinaryParser): ErrOr[S] =
+            for
+                bp <- SSHReader[Transport.BinaryProtocol].read(t)
+                t <- SSHReader.this.read(new ByteBufferBinaryParser(ByteBuffer.wrap(bp.payload)))
+            yield
+                t
+                
+                
 
 object SSHReader:
 

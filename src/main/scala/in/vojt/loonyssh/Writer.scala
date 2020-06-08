@@ -78,6 +78,7 @@ object SSHWriter:
     inline given productWriter[V:ClassTag](using m: Mirror.ProductOf[V]) as SSHWriter[V] = (p:V, os) => {
         println(s"P --->>> $p (${p.getClass})")
         writeProduct[m.MirroredElemTypes](p.asInstanceOf)(os)(0)
+        os.flush
     }
 
     inline given enumWriter[V<:Enum:ClassTag](using w: EnumSupport[V]) as SSHWriter[V] = SSHWriter[String].coMap(w.toName)

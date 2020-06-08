@@ -35,36 +35,24 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
     
     val isbr = InputStreamBinaryParser(bis)
 
-    val ident = SSHReader[Transport.Identification].read(isbr)
-    println(ident)
+    val reader = for
+        ident  <- SSHReader[Transport.Identification]
+        kex    <- SSHReader[SSHMsg.KexInit].fromBinaryPacket
+        _      =  SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(Kex), bos)
+        // missing DH exchange step
+        _      =  SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(SSHMsg.NewKeys), bos)
+        // yay! almost monadic!
+        // now I will have to merge Reader and Writer to some IO to be able to flatmap on both ...
+    yield
+        println(kex)
+        kex
 
-    val bpKex = SSHReader[Transport.BinaryProtocol].read(isbr)
-    println(s"bpKex: $bpKex")
+    reader.read(isbr)
 
-    // SSHReader.enumReader[in.vojt.loonyssh.KeyExchangeMethod]
-
-    val bbbr = ByteBufferBinaryParser(ByteBuffer.wrap(bpKex.toOption.get.payload))
-    val kex = SSHReader.productReader[SSHMsg.KexInit].read(bbbr)
-    println(s"kex: $kex")
-
-    SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(Kex), bos)
-    bos.flush
-
-    SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(SSHMsg.NewKeys), bos)
-    bos.flush
-
-    // println(s"NEW KEYS: $nk")
-    
-    //    import com.jcraft.jsch.DHEC256
-    //    import com.jcraft.jsch.WrapperIO
-    //    import com.jcraft.jsch.WrapperSession
-    //
-    //    val io = new WrapperIO(bis, bos, bos)
-    //    val sess = new WrapperSession(io)
-    //    val dh = new DHEC256(ident.getBytes, IdentificationString.getBytes, ???, ???)
-    //    dh.init(sess)
-    //
-    //    // import com.jcraft.jsch.jce.AES128CTR
+    //  import com.jcraft.jsch.jce.AES128CTR
+    //  import com.jcraft.jsch.{DHEC256, Utils, WrapperIO, WrapperSession}
+    //  val dh = new DHEC256(ident.getBytes, IdentificationString.getBytes, ???, ???)
+    //  dh.init(sess)
 
     println("Remaining:")
     LazyList.continually(bis.read).
@@ -87,6 +75,7 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
         bos.flush
         soc.close
 
+    // Should be turned into a test
     // val baos = new ByteArrayOutputStream(65536)
     // SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(Kex), baos)
     // baos.flush

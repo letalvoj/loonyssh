@@ -49,3 +49,7 @@ case class ByteBufferBinaryParser(bb: ByteBuffer) extends BinaryParser:
     def _getInt = bb.getInt
     def _get = bb.get
     def _getByteArray(n:Int) = if(n > 0) Array.fill(n)(bb.get) else Array.empty
+
+
+object ByteBufferBinaryParser:
+    def apply(array:Array[Byte]) = new ByteBufferBinaryParser(ByteBuffer.wrap(array))
