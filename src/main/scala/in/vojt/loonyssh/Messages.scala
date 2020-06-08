@@ -116,15 +116,23 @@ object SSHMsg:
     case object NewKeys extends SSHMsg(Magic.NewKeys)
 
 /**
+    - SSH-protoversion-softwareversion SP comments CR LF
+    - BinaryProtocol
+ */
+enum Transport:
+    case Identification(version:String)
+    /**
       uint32    packet_length
       byte      padding_length
       byte[n1]  payload; n1 = packet_length - padding_length - 1
       byte[n2]  random padding; n2 = padding_length
       byte[m]   mac (Message Authentication Code - MAC); m = mac_length
-*/
-case class BinaryPacket[V](length:Int, paddingLength:Byte, payload:V, padding:Seq[Byte], mac:Seq[Byte])
-
-/**
-  SSH-protoversion-softwareversion SP comments CR LF
-*/
-case class Identification(name:String)
+      oboslete
+    */
+    case BinaryProtocol(
+        len:Int,
+        pad:Byte,
+        magic:Byte,
+        payload:Array[Byte],
+        padding:Array[Byte],
+        mac:Array[Byte])

@@ -38,22 +38,21 @@ object SSHWriter:
         SSHWriter[Array[Byte]].write(s.getBytes, os)
     }
 
-    given identificationWriter as SSHWriter[Identification] = (i, os) => SSHWriter[String].write(i.name, os)
+    given SSHWriter[Transport.Identification] = (i, os) => SSHWriter[String].write(i.version, os)
 
-    def wrap[V<:SSHMsg[Byte]:SSHWriter](value:V, cypherBlockSize:Int=0): BinaryPacket[Array[Byte]] = {
+    def wrap[V<:SSHMsg[Byte]:SSHWriter](value:V, cypherBlockSize:Int=0): Transport.BinaryProtocol = {
             val CypherBlockSize=8 // nonsense // size excluding mac should be min 8
 
             val blockSize = math.max(cypherBlockSize, 8)
 
             // TODO write directly to the bos instead of arr
             val baos = new ByteArrayOutputStream(65536)
-            SSHWriter[Byte].write(value.magic,baos)
             SSHWriter[V].write(value, baos)
             baos.flush
             
             val payload = baos.toByteArray
             
-            val meat = 1 + payload.length
+            val meat = 2 + payload.length
             val len = 4 + meat
 
             var padding=(-len)&(blockSize-1)
@@ -63,12 +62,13 @@ object SSHWriter:
 
             println(s"BP --->>> ${4} ${1} ${payload.length} ${padding}")
 
-            BinaryPacket(
+            new Transport.BinaryProtocol(
                 meat+padding,
                 padding.toByte,
+                value.magic,
                 payload,
-                Seq.fill(padding)(8),
-                Seq.empty, // mac - none
+                Array.fill(padding)(8),
+                Array.empty, // mac - sofr none
             )
     }
 

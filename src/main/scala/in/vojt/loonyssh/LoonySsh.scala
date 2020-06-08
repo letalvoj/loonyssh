@@ -32,32 +32,39 @@ val Kex =
 def connect(bis: BufferedInputStream, bos: BufferedOutputStream) = 
     bos.write(IdentificationString.getBytes)
     bos.flush
+    
+    val isbr = InputStreamBinaryParser(bis)
 
-    val ident = SSHReader[Identification].read(bis)
+    val ident = SSHReader[Transport.Identification].read(isbr)
     println(ident)
 
-    val kex = SSHReader[BinaryPacket[SSHMsg.KexInit]].read(bis)
-    println(s"KEX: $kex")
+    val bpKex = SSHReader[Transport.BinaryProtocol].read(isbr)
+    println(s"bpKex: $bpKex")
 
-    SSHWriter[BinaryPacket[Array[Byte]]].write(SSHWriter.wrap(Kex), bos)
+    // SSHReader.enumReader[in.vojt.loonyssh.KeyExchangeMethod]
+
+    val bbbr = ByteBufferBinaryParser(ByteBuffer.wrap(bpKex.toOption.get.payload))
+    val kex = SSHReader.productReader[SSHMsg.KexInit].read(bbbr)
+    println(s"kex: $kex")
+
+    SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(Kex), bos)
     bos.flush
 
-    SSHWriter[BinaryPacket[Array[Byte]]].write(SSHWriter.wrap(SSHMsg.NewKeys), bos)
+    SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(SSHMsg.NewKeys), bos)
     bos.flush
 
-    // val nk = SSHReader[BinaryPacket[SSHMsg.NewKeys.type]].read(bis)
     // println(s"NEW KEYS: $nk")
     
-//    import com.jcraft.jsch.DHEC256
-//    import com.jcraft.jsch.WrapperIO
-//    import com.jcraft.jsch.WrapperSession
-//
-//    val io = new WrapperIO(bis, bos, bos)
-//    val sess = new WrapperSession(io)
-//    val dh = new DHEC256(ident.getBytes, IdentificationString.getBytes, ???, ???)
-//    dh.init(sess)
-//
-//    // import com.jcraft.jsch.jce.AES128CTR
+    //    import com.jcraft.jsch.DHEC256
+    //    import com.jcraft.jsch.WrapperIO
+    //    import com.jcraft.jsch.WrapperSession
+    //
+    //    val io = new WrapperIO(bis, bos, bos)
+    //    val sess = new WrapperSession(io)
+    //    val dh = new DHEC256(ident.getBytes, IdentificationString.getBytes, ???, ???)
+    //    dh.init(sess)
+    //
+    //    // import com.jcraft.jsch.jce.AES128CTR
 
     println("Remaining:")
     LazyList.continually(bis.read).
@@ -67,8 +74,8 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
         foreach(print)
 
 @main def loonymain():Unit =
-    val soc = new Socket("sdf.org", 22)
-    // val soc = new Socket("testing_docker_container", 12345) 
+    // val soc = new Socket("sdf.org", 22)
+    val soc = new Socket("testing_docker_container", 12345) 
     // val soc = new Socket("localhost", 20002) 
 
     val bis = new BufferedInputStream(soc.getInputStream)
@@ -81,7 +88,7 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
         soc.close
 
     // val baos = new ByteArrayOutputStream(65536)
-    // SSHWriter[BinaryPacket[Array[Byte]]].write(SSHWriter.wrap(Kex), baos)
+    // SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(Kex), baos)
     // baos.flush
     // println(s"baos ${baos.toByteArray.toSeq}")
 
@@ -90,7 +97,7 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
     // val pis = new PipedInputStream(pos)
     // val bpis = new BufferedInputStream(pis)
 
-    // SSHWriter[BinaryPacket[Array[Byte]]].write(SSHWriter.wrap(Kex), pos)
+    // SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(Kex), pos)
     // val kexRecoveder = SSHReader[BinaryPacket[SSHMsg.KexInit]].read(pis)
     // println(Right(Kex) == kexRecoveder.map(_.payload)) // false
     // pos.close
