@@ -1,4 +1,4 @@
-package in.vojt.rework
+package in.vojt.loonyssh
 
 import java.io._
 import java.nio.ByteBuffer
@@ -17,7 +17,7 @@ enum Err:
 type ErrOr[V] = Either[Err, V]
 
 object ErrOr:
-    def exception[T,V](value: => V)(implicit t:T):ErrOr[(T,V)] = try Right((t, value)) catch
+    def exception[V](value: => V):ErrOr[V] = try Right(value) catch
         case NonFatal(e:Exception) => Left(Err.Exc(e))
 
     def traverse(t:Tuple):ErrOr[Tuple] = t match

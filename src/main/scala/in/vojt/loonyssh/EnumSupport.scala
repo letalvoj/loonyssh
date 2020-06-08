@@ -32,7 +32,7 @@ object EnumSupport:
                 catch
                     // workaround for https://github.com/lampepfl/dotty/issues/9110
                     // check whether it got fixed from time to time
-                    case _:IndexOutOfBoundsException => Map.empty
+                    case _:java.lang.IndexOutOfBoundsException => Map.empty
 
             _fromName[E,ts,ls] ++ additional
         case _: (Unit, Unit) => Map.empty
