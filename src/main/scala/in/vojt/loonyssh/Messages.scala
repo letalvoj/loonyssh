@@ -1,8 +1,6 @@
-package in.vojt.loonyshh
+package in.vojt.loonyssh
 
-import in.vojt.loonyshh.names._
-
-trait SSHMsg[M<:Int](val magic:M)
+trait SSHMsg[M<:Byte](val magic:M)
 
 object SSHMsg:
 
@@ -10,32 +8,32 @@ object SSHMsg:
         https://tools.ietf.org/html/rfc4250#section-4.1.2
     */
     object Magic:
-        val Disconnect              =   1
-        val Ignore                  =   2
-        val Unimplemented           =   3
-        val Debug                   =   4
-        val ServiceRequest          =   5
-        val ServiceAccept           =   6
-        val KexInit                 =  20
-        val NewKeys                 =  21
-        val UserauthRequest         =  50
-        val UserauthFailure         =  51
-        val UserauthSuccess         =  52
-        val UserauthBanner          =  53
-        val GlobalRequest           =  80
-        val RequestSuccess          =  81
-        val RequestFailure          =  82
-        val ChannelOpen             =  90
-        val ChannelOpenConfirmation =  91
-        val ChannelOpenFailure      =  92
-        val ChannelWindowAdjust     =  93
-        val ChannelData             =  94
-        val ChannelExtendedData     =  95
-        val ChannelEof              =  96
-        val ChannelClose            =  97
-        val ChannelRequest          =  98
-        val ChannelSuccess          =  99
-        val ChannelFailure          = 100
+        inline val Disconnect              =   1
+        inline val Ignore                  =   2
+        inline val Unimplemented           =   3
+        inline val Debug                   =   4
+        inline val ServiceRequest          =   5
+        inline val ServiceAccept           =   6
+        inline val KexInit                 =  20
+        inline val NewKeys                 =  21
+        inline val UserauthRequest         =  50
+        inline val UserauthFailure         =  51
+        inline val UserauthSuccess         =  52
+        inline val UserauthBanner          =  53
+        inline val GlobalRequest           =  80
+        inline val RequestSuccess          =  81
+        inline val RequestFailure          =  82
+        inline val ChannelOpen             =  90
+        inline val ChannelOpenConfirmation =  91
+        inline val ChannelOpenFailure      =  92
+        inline val ChannelWindowAdjust     =  93
+        inline val ChannelData             =  94
+        inline val ChannelExtendedData     =  95
+        inline val ChannelEof              =  96
+        inline val ChannelClose            =  97
+        inline val ChannelRequest          =  98
+        inline val ChannelSuccess          =  99
+        inline val ChannelFailure          = 100
         
     /**
         byte      SSH_MSG_DISCONNECT
@@ -49,7 +47,7 @@ object SSHMsg:
         byte      SSH_MSG_IGNORE
         string    data
     */
-    case class Ignore(data:String)          extends SSHMsg(Magic.Ignore)
+    case class Ignore(data:String) extends SSHMsg(Magic.Ignore)
 
     /**
         byte      SSH_MSG_UNIMPLEMENTED

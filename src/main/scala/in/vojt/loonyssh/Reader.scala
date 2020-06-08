@@ -1,7 +1,4 @@
-package in.vojt.loonyshh
-
-import in.vojt.loonyshh.names._
-import in.vojt.loonyshh.enums._
+package in.vojt.loonyssh
 
 import java.io._
 import java.nio.ByteBuffer
@@ -88,16 +85,22 @@ object SSHReader:
         def read(is: InputStream): ErrOr[V] = e
 
     given intReader as SSHReader[Int] = is => ErrOr exception {
-        ByteBuffer.wrap(is.readNBytes(4)).getInt
+        val arr = is.readNBytes(4)
+        println(s"I ---<<< ${arr.toSeq}")
+        ByteBuffer.wrap(arr).getInt
     }
 
     given byteReader as SSHReader[Byte] = is => ErrOr exception {
-        is.read().toByte
+        val b = is.read().toByte
+        println(s"B ---<<< ${b}")
+        b
     }
 
-    inline def arrayReader(n:Int) = new SSHReader[Array[Byte]]:
-        def read(is: InputStream): ErrOr[Array[Byte]] =
-            ErrOr exception is.readNBytes(n)
+    inline def arrayReader(n:Int) =
+        println(s"AB ---<<< ${n}")
+        new SSHReader[Array[Byte]]:
+            def read(is: InputStream): ErrOr[Array[Byte]] =
+                ErrOr exception is.readNBytes(n)
 
     given stringReader as SSHReader[String] =
         for
@@ -114,18 +117,29 @@ object SSHReader:
             yield
                 LSeq[L,T](l)
 
-    inline given productReader[L<:Int, V<:SSHMsg[L]:ClassTag](using m: Mirror.ProductOf[V]) as SSHReader[V] = is => {
+    inline given productReader[L<:Byte, V<:SSHMsg[L]:ClassTag](using m: Mirror.ProductOf[V]) as SSHReader[V] = is => {
         println(s"MAGIC: ${is.read} ${summonInline[ClassTag[V]]}")
         val p = readProduct[m.MirroredElemTypes](is)(0)
-        ErrOr.traverse(p).map(t => m.fromProduct(t.asInstanceOf).asInstanceOf[V])
+        println(s"PROD: ${p}")
+        ErrOr.traverse(p).map{
+            case () => m.fromProduct(Product0).asInstanceOf[V]
+            case t  => m.fromProduct(t.asInstanceOf).asInstanceOf[V]
+        }
     }
 
     inline private def readProduct[T](is: InputStream)(i:Int):Tuple = inline erasedValue[T] match
-        case _: (t *: ts) => summonInline[SSHReader[t]].read(is) *: readProduct[ts](is)(i+1)
+        case _: (t *: ts) =>
+            println(s"reading ${summonInline[SSHReader[t]]}")
+            summonInline[SSHReader[t]].read(is) *: readProduct[ts](is)(i+1)
         case _: Unit => ()
 
     inline private def nameList[V:ClassTag](parse: String => V): SSHReader[NameList[V]] =
-        SSHReader[String].map(s => NameList.fromArr(s.split(",").map(parse)))
+        SSHReader[String].map(s => NameList.fromArr(
+            if s.nonEmpty then
+                s.split(",").map(parse)
+            else
+                Array()
+        ))
 
     given nameListReader as SSHReader[NameList[String]] =
         nameList(identity)

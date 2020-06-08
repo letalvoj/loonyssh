@@ -1,4 +1,4 @@
-package in.vojt.loonyshh
+package in.vojt.loonyssh
 
 import scala.io.Source
 

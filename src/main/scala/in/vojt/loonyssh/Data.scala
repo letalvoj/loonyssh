@@ -1,4 +1,4 @@
-package in.vojt.loonyshh
+package in.vojt.loonyssh
 
 import scala.compiletime._
 import java.io._
@@ -13,11 +13,10 @@ import scala.collection.immutable.ArraySeq
     contain a comma (",").  As this is a list of names, all of the
     elements contained are names and MUST be in US-ASCII.
 */
-case class NameList[V](names:V*)
+case class NameList[V](names:List[V])
 
 object NameList:
-    inline def fromArr[B](values:Array[B]):NameList[B] = fromSeq(ArraySeq.unsafeWrapArray(values))
-    inline def fromSeq[B](values:Seq[B]):NameList[B] = NameList(values:_*)
+    inline def fromArr[B](values:Array[B]):NameList[B] = NameList(values.toList)
 
 opaque type LSeq[L<:Int, V] = Seq[V]
 object LSeq:

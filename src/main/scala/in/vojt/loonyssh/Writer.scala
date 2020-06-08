@@ -1,7 +1,4 @@
-package in.vojt.loonyshh
-
-import in.vojt.loonyshh.names._
-import in.vojt.loonyshh.enums._
+package in.vojt.loonyssh
 
 import java.io._
 import java.nio.ByteBuffer
@@ -25,9 +22,15 @@ object SSHWriter:
 
     inline def apply[V](using impl: SSHWriter[V]):SSHWriter[V] = impl
 
-    given intWriter as SSHWriter[Int] = (i, os) => os.write(ByteBuffer.allocate(4).putInt(i).array)
-    given byteWriter as SSHWriter[Byte] = (b, os) => os.write(b)
-    given arrayWriter as SSHWriter[Array[Byte]] = (b, os) => os.write(b)
+    given intWriter as SSHWriter[Int] = (i, os) =>
+        println(s"I --->>> ${i}")
+        os.write(ByteBuffer.allocate(4).putInt(i).array)
+    given byteWriter as SSHWriter[Byte] = (b, os) =>
+        println(s"B --->>> ${b}")
+        os.write(b)
+    given arrayWriter as SSHWriter[Array[Byte]] = (b, os) =>
+        println(s"A --->>> ${b.toSeq}")
+        os.write(b)
     given seqWriter[V:SSHWriter] as SSHWriter[Seq[V]] = (s, os) => s.foreach(v => SSHWriter[V].write(v, os))
 
     given stringWriter as SSHWriter[String] = (s, os) => {
@@ -37,23 +40,35 @@ object SSHWriter:
 
     given identificationWriter as SSHWriter[Identification] = (i, os) => SSHWriter[String].write(i.name, os)
 
-    def wrap[V<:Product:SSHWriter](value:V): BinaryPacket[Array[Byte]] = {
+    def wrap[V<:SSHMsg[Byte]:SSHWriter](value:V, cypherBlockSize:Int=0): BinaryPacket[Array[Byte]] = {
             val CypherBlockSize=8 // nonsense // size excluding mac should be min 8
 
+            val blockSize = math.max(cypherBlockSize, 8)
+
+            // TODO write directly to the bos instead of arr
             val baos = new ByteArrayOutputStream(65536)
+            SSHWriter[Byte].write(value.magic,baos)
             SSHWriter[V].write(value, baos)
             baos.flush
+            
             val payload = baos.toByteArray
-            val meat = 4 + 1 + payload.length
-            val overflow = meat % CypherBlockSize
-            val padding = CypherBlockSize - overflow
+            
+            val meat = 1 + payload.length
+            val len = 4 + meat
+
+            var padding=(-len)&(blockSize-1)
+            if(padding<blockSize)
+                padding += blockSize
+
+
+            println(s"BP --->>> ${4} ${1} ${payload.length} ${padding}")
 
             BinaryPacket(
                 meat+padding,
                 padding.toByte,
                 payload,
-                Seq.fill(padding)(0),
-                Seq.empty, // mac <- // not yet implemented
+                Seq.fill(padding)(8),
+                Seq.empty, // mac - none
             )
     }
 
@@ -61,9 +76,7 @@ object SSHWriter:
     inline given knownLengthSeqWriter[L<:Int,T](using wr:SSHWriter[Seq[T]]) as SSHWriter[LSeq[L,T]] = (ls, os) => wr.write(ls.toSeq, os)
 
     inline given productWriter[V:ClassTag](using m: Mirror.ProductOf[V]) as SSHWriter[V] = (p:V, os) => {
-        // match statement can not be used as of 0.24-RC1
-        if (p.isInstanceOf[SSHMsg[_]])
-            os.write(p.asInstanceOf[SSHMsg[_]].magic)
+        println(s"P --->>> $p (${p.getClass})")
         writeProduct[m.MirroredElemTypes](p.asInstanceOf)(os)(0)
     }
 

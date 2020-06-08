@@ -1,6 +1,4 @@
-package in.vojt.loonyshh.names
-
-import in.vojt.loonyshh.SSHReader
+package in.vojt.loonyssh
 
 enum DisconnectCode(val code:Int):
     case HostNotAllowedToConnect     extends DisconnectCode(1)
@@ -203,8 +201,7 @@ enum EncryptionAlgorithm:
     case Unknown(value:String)
 
 enum MACAlgorithm:
-    case `hmac-sha2-256`
-    case `hmac-md5`
+    case `hmac-sha1` //    case `hmac-sha2-256`
     case `none`
     case Unknown(value:String)
 

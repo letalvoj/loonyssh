@@ -1,4 +1,4 @@
-package in.vojt.loonyshh.enums
+package in.vojt.loonyssh
 
 import scala.deriving._
 import scala.compiletime._
