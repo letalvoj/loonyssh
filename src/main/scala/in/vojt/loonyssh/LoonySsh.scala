@@ -30,13 +30,13 @@ val Kex =
         reserved = 0)
 
 val sshProtocol = for
-    _          <- SSHReader.write(new Transport.Identification(IdentificationString))
-    sIs        <- SSHReader[Transport.Identification]
+    _          <- SSH.write(new Transport.Identification(IdentificationString))
+    sIs        <- SSH[Transport.Identification]
     _           = println(sIs)
-    _          <- SSHReader.write(SSHWriter.wrap(Kex))
-    (kxO, kxB) <- SSHReader.fromBinaryPacket[SSHMsg.KexInit]
+    _          <- SSH.write(SSHWriter.wrap(Kex))
+    (kxO, kxB) <- SSH.fromBinaryPacket[SSHMsg.KexInit]
     _          = println((kxO, kxB))
-    _          <- SSHReader.write(SSHWriter.wrap(SSHMsg.NewKeys))
+    _          <- SSH.write(SSHWriter.wrap(SSHMsg.NewKeys))
 yield
     kxO
 
@@ -59,7 +59,7 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
         take(30).
         foreach(print)
 
-@main def LoonySsh():Unit =
+@main def LoonySSH():Unit =
     val soc = new Socket("sdf.org", 22)
     // val soc = new Socket("testing_docker_container", 12345) 
     // val soc = new Socket("localhost", 20002) 

@@ -16,41 +16,41 @@ import scala.util.control.NonFatal
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
-trait SSHReader[S]: // IO / State monad?
+trait SSH[S]: // IO / State monad?
     def read(t: BinaryProtocol): ErrOr[S]
 
     // cats &| other FP lib
-    def map[W](f:S=>W):SSHReader[W] = new SSHReader[W]:
+    def map[W](f:S=>W):SSH[W] = new SSH[W]:
         def read(t: BinaryProtocol): ErrOr[W] =
-            SSHReader.this.read(t).map(f)
+            SSH.this.read(t).map(f)
 
-    def flatMap[W](f:S=>SSHReader[W]):SSHReader[W] = new SSHReader[W]:
+    def flatMap[W](f:S=>SSH[W]):SSH[W] = new SSH[W]:
         def read(t: BinaryProtocol): ErrOr[W] =
-            SSHReader.this.read(t).map(f).flatMap(r => r.read(t))
+            SSH.this.read(t).map(f).flatMap(r => r.read(t))
 
-object SSHReader:
+object SSH:
 
-    inline def apply[S](using impl: SSHReader[S]):SSHReader[S] = impl
+    inline def apply[S](using impl: SSH[S]):SSH[S] = impl
 
-    inline def pure[S](s:S):SSHReader[S] = pure(Right(s))
-    inline def pure[S](eos:ErrOr[S]):SSHReader[S] = t => eos
+    inline def pure[S](s:S):SSH[S] = pure(Right(s))
+    inline def pure[S](eos:ErrOr[S]):SSH[S] = t => eos
 
-    def fromBinaryPacket[S:SSHReader]:SSHReader[(S,Transport.BinaryPacket)] = new SSHReader:
+    def fromBinaryPacket[S:SSH]:SSH[(S,Transport.BinaryPacket)] = new SSH:
         def read(t: BinaryProtocol) = for {
-            bp <- SSHReader[Transport.BinaryPacket].read(t)
+            bp <- SSH[Transport.BinaryPacket].read(t)
             bbp = BinaryProtocol(
                 ByteBuffer.wrap(bp.payload),
                 ByteBuffer.allocate(0)
             )
-            s  <- SSHReader[S].read(bbp)
+            s  <- SSH[S].read(bbp)
         } yield (s, bp)
 
-    def write[S:SSHWriter](s:S):SSHReader[Unit] = 
+    def write[S:SSHWriter](s:S):SSH[Unit] = 
         bb => SSHWriter[S].write(s, bb).map(_ => bb.flush)
 
-    given SSHReader[Unit] = bb => Right(())
+    given SSH[Unit] = bb => Right(())
 
-    given SSHReader[Transport.Identification] = bb => ErrOr catchNonFatal {
+    given SSH[Transport.Identification] = bb => ErrOr catchNonFatal {
         new Transport.Identification(new String(readIdentification(bb)).trim)
     }
 
@@ -66,38 +66,38 @@ object SSHReader:
         loop(bb.get).toArray[Byte]
 
 
-    given SSHReader[Int]  = bb => ErrOr.catchNonFatal(bb.getInt)
-    given SSHReader[Byte] = bb => ErrOr.catchNonFatal(bb.get)
+    given SSH[Int]  = bb => ErrOr.catchNonFatal(bb.getInt)
+    given SSH[Byte] = bb => ErrOr.catchNonFatal(bb.get)
 
-    inline def arrayReader(n:Int):SSHReader[Array[Byte]] =
+    inline def arrayReader(n:Int):SSH[Array[Byte]] =
         bb => ErrOr.catchNonFatal(bb.getByteArray(n))
 
-    given SSHReader[String] = for {
-        n <- SSHReader[Int]
+    given SSH[String] = for {
+        n <- SSH[Int]
         a <- arrayReader(n)
     } yield new String(a)
 
-    given SSHReader[Transport.BinaryPacket] = for {
-        lm <- SSHReader[Int] // how to convert BB to IS reader
-        lp <- SSHReader[Byte]
-        magic <- SSHReader[Byte]
+    given SSH[Transport.BinaryPacket] = for {
+        lm <- SSH[Int] // how to convert BB to IS reader
+        lp <- SSH[Byte]
+        magic <- SSH[Byte]
         payload <- arrayReader(lm - lp - 2)
         padding <- arrayReader(lp)
         _ = println(s"got padding of len ${padding.size}")
         mac <- arrayReader(0)
     } yield new Transport.BinaryPacket(lm,lp,magic,payload,padding,mac)
 
-    given SSHReader[NameList[String]] = SSHReader[String].map(s => NameList(s.split(",").toList))
+    given SSH[NameList[String]] = SSH[String].map(s => NameList(s.split(",").toList))
 
-    inline given lseqReader[L<:Int, T:ClassTag:SSHReader] as SSHReader[LSeq[L,T]] = br =>
+    inline given lseqReader[L<:Int, T:ClassTag:SSH] as SSH[LSeq[L,T]] = br =>
         val len = constValue[L]
-        val list = List.fill(len)(SSHReader[T].read(br))
+        val list = List.fill(len)(SSH[T].read(br))
         for
             l <- ErrOr.traverse(list)
         yield
             LSeq[L,T](l)
 
-    inline given productReader[V<:Product:ClassTag](using m: Mirror.ProductOf[V]) as SSHReader[V] = br => {
+    inline given productReader[V<:Product:ClassTag](using m: Mirror.ProductOf[V]) as SSH[V] = br => {
         val p = readProduct[m.MirroredElemTypes](br)(0)
         ErrOr.traverse(p).map{
             case () => m.fromProduct(Product0) // Unit != Tuple
@@ -107,18 +107,18 @@ object SSHReader:
 
     inline private def readProduct[T](br: BinaryProtocol)(i:Int):Tuple = inline erasedValue[T] match
         case _: (t *: ts) =>
-            val reader = summonInline[SSHReader[t]]
+            val reader = summonInline[SSH[t]]
             reader.read(br) *: readProduct[ts](br)(i+1)
         case _: Unit => ()
 
-    inline given enumReader[V <: Enum: ClassTag](using e:EnumSupport[V]) as SSHReader[V] =
-        SSHReader[String].flatMap(name => SSHReader.pure(parseOrUnknown[V](name)))
+    inline given enumReader[V <: Enum: ClassTag](using e:EnumSupport[V]) as SSH[V] =
+        SSH[String].flatMap(name => SSH.pure(parseOrUnknown[V](name)))
 
-    inline given nameListEnumReader[V <: Enum: ClassTag](using e: EnumSupport[V]) as SSHReader[NameList[V]] =
-        SSHReader[String].flatMap(s => {
+    inline given nameListEnumReader[V <: Enum: ClassTag](using e: EnumSupport[V]) as SSH[NameList[V]] =
+        SSH[String].flatMap(s => {
             val errOrs = s.split(",").map(parseOrUnknown[V](_)).toList
             val errOrList = ErrOr.traverse(errOrs).map(NameList(_))
-            SSHReader.pure(errOrList)
+            SSH.pure(errOrList)
         })
 
     inline def parseOrUnknown[V<:Enum](name:String)(using sup:EnumSupport[V], ct:ClassTag[V]):ErrOr[V] =
@@ -128,13 +128,13 @@ object SSHReader:
             Err.Unk(ct.runtimeClass.toString, "Unknown")
         }
 
-    trait ByKey[V <: Enum, K: SSHReader](f:V => K):
+    trait ByKey[V <: Enum, K: SSH](f:V => K):
         def values: Array[V] // hack to expose values from Enum companion object
         lazy val byKey = values.map{ x => f(x) -> x }.toMap
 
-        given reader as SSHReader[V] = for {
-            k <- SSHReader[K]
+        given reader as SSH[V] = for {
+            k <- SSH[K]
             e  = byKey.get(k).toRight(Err.Unk(this.getClass.getSimpleName, k))
-            v <- SSHReader.pure(e)
+            v <- SSH.pure(e)
         } yield v
 
