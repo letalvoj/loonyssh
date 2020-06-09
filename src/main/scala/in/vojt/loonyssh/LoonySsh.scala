@@ -30,21 +30,24 @@ val Kex =
         reserved = 0)
 
 val sshProtocol = for
-    _          <- SSHIO.write(new Transport.Identification(IdentificationString))
-    sIs        <- SSHIO[Transport.Identification]
+    _          <- SSHReader.write(new Transport.Identification(IdentificationString))
+    sIs        <- SSHReader[Transport.Identification]
     _           = println(sIs)
-    _          <- SSHIO.write(SSHWriter.wrap(Kex))
-    (kxO, kxB) <- SSHIO.fromBinaryPacket[SSHMsg.KexInit]
-    // kxT <- SSHIO.fromBinaryPacket[SSHMsg.KexInit]
-    // (kxO, kxB) = kxT
+    _          <- SSHReader.write(SSHWriter.wrap(Kex))
+    (kxO, kxB) <- SSHReader.fromBinaryPacket[SSHMsg.KexInit]
     _          = println((kxO, kxB))
-    _          <- SSHIO.write(SSHWriter.wrap(SSHMsg.NewKeys))
+    _          <- SSHReader.write(SSHWriter.wrap(SSHMsg.NewKeys))
 yield
     kxO
 
 def connect(bis: BufferedInputStream, bos: BufferedOutputStream) = 
-    val res = sshProtocol.run(bis, bos)
-    println("RESULT:" + res)        
+    val errOrRes = sshProtocol.read(BinaryProtocol(bis,bos))
+    errOrRes match{
+        case Right(res) => println("RESULT:" + res)        
+        case Left(Err.Exc(e)) => throw e
+        case Left(o) => System.err.println(o)
+    }
+    
     //  import com.jcraft.jsch.jce.AES128CTR
     //  import com.jcraft.jsch.{DHEC256, Utils, WrapperIO, WrapperSession}
     //  val dh = new DHEC256(ident.getBytes, IdentificationString.getBytes, ???, ???)
@@ -56,9 +59,9 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
         take(30).
         foreach(print)
 
-@main def loonymain():Unit =
-    // val soc = new Socket("sdf.org", 22)
-    val soc = new Socket("testing_docker_container", 12345) 
+@main def LoonySsh():Unit =
+    val soc = new Socket("sdf.org", 22)
+    // val soc = new Socket("testing_docker_container", 12345) 
     // val soc = new Socket("localhost", 20002) 
 
     val bis = new BufferedInputStream(soc.getInputStream)
@@ -69,19 +72,3 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
     finally
         bos.flush
         soc.close
-
-    // Should be turned into a test
-    // val baos = new ByteArrayOutputStream(65536)
-    // SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(Kex), baos)
-    // baos.flush
-    // println(s"baos ${baos.toByteArray.toSeq}")
-
-    // // Currently fails since the binary packet is not serialized properly
-    // val pos = new PipedOutputStream()
-    // val pis = new PipedInputStream(pos)
-    // val bpis = new BufferedInputStream(pis)
-
-    // SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(Kex), pos)
-    // val kexRecoveder = SSHReader[BinaryPacket[SSHMsg.KexInit]].read(pis)
-    // println(Right(Kex) == kexRecoveder.map(_.payload)) // false
-    // pos.close

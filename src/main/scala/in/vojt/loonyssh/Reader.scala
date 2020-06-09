@@ -5,6 +5,9 @@ import java.net.Socket
 import java.nio.ByteBuffer
 import scala.reflect.ClassTag
 
+import java.net._
+import java.io._
+
 import scala.deriving._
 import scala.compiletime._
 import scala.language.implicitConversions
@@ -14,15 +17,15 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
 trait SSHReader[S]: // IO / State monad?
-    def read(t: BinaryParser): ErrOr[S]
+    def read(t: BinaryProtocol): ErrOr[S]
 
     // cats &| other FP lib
     def map[W](f:S=>W):SSHReader[W] = new SSHReader[W]:
-        def read(t: BinaryParser): ErrOr[W] =
+        def read(t: BinaryProtocol): ErrOr[W] =
             SSHReader.this.read(t).map(f)
 
     def flatMap[W](f:S=>SSHReader[W]):SSHReader[W] = new SSHReader[W]:
-        def read(t: BinaryParser): ErrOr[W] =
+        def read(t: BinaryProtocol): ErrOr[W] =
             SSHReader.this.read(t).map(f).flatMap(r => r.read(t))
 
 object SSHReader:
@@ -32,12 +35,18 @@ object SSHReader:
     inline def pure[S](s:S):SSHReader[S] = pure(Right(s))
     inline def pure[S](eos:ErrOr[S]):SSHReader[S] = t => eos
 
-    def fromBinaryPacket[S:SSHReader]:SSHReader[(S,Transport.BinaryProtocol)] = new SSHReader:
-        def read(t: BinaryParser) = for {
-            bp <- SSHReader[Transport.BinaryProtocol].read(t)
-            bbp = ByteBufferBinaryParser(bp.payload)
+    def fromBinaryPacket[S:SSHReader]:SSHReader[(S,Transport.BinaryPacket)] = new SSHReader:
+        def read(t: BinaryProtocol) = for {
+            bp <- SSHReader[Transport.BinaryPacket].read(t)
+            bbp = BinaryProtocol(
+                ByteBuffer.wrap(bp.payload),
+                ByteBuffer.allocate(0)
+            )
             s  <- SSHReader[S].read(bbp)
         } yield (s, bp)
+
+    def write[S:SSHWriter](s:S):SSHReader[Unit] = 
+        bb => SSHWriter[S].write(s, bb).map(_ => bb.flush)
 
     given SSHReader[Unit] = bb => Right(())
 
@@ -45,7 +54,7 @@ object SSHReader:
         new Transport.Identification(new String(readIdentification(bb)).trim)
     }
 
-    private def readIdentification(bb:BinaryParser):Array[Byte] =
+    private def readIdentification(bb:BinaryProtocol):Array[Byte] =
         val buf = new ArrayBuffer[Byte](100)
         @tailrec def loop(prev:Byte):ArrayBuffer[Byte] = Seq(prev, bb.get.toByte) match {
             case crlf@Seq('\r','\n') =>
@@ -68,7 +77,7 @@ object SSHReader:
         a <- arrayReader(n)
     } yield new String(a)
 
-    given SSHReader[Transport.BinaryProtocol] = for {
+    given SSHReader[Transport.BinaryPacket] = for {
         lm <- SSHReader[Int] // how to convert BB to IS reader
         lp <- SSHReader[Byte]
         magic <- SSHReader[Byte]
@@ -76,7 +85,7 @@ object SSHReader:
         padding <- arrayReader(lp)
         _ = println(s"got padding of len ${padding.size}")
         mac <- arrayReader(0)
-    } yield new Transport.BinaryProtocol(lm,lp,magic,payload,padding,mac)
+    } yield new Transport.BinaryPacket(lm,lp,magic,payload,padding,mac)
 
     given SSHReader[NameList[String]] = SSHReader[String].map(s => NameList(s.split(",").toList))
 
@@ -96,7 +105,7 @@ object SSHReader:
         }.asInstanceOf[ErrOr[V]]
     }
 
-    inline private def readProduct[T](br: BinaryParser)(i:Int):Tuple = inline erasedValue[T] match
+    inline private def readProduct[T](br: BinaryProtocol)(i:Int):Tuple = inline erasedValue[T] match
         case _: (t *: ts) =>
             val reader = summonInline[SSHReader[t]]
             reader.read(br) *: readProduct[ts](br)(i+1)

@@ -117,7 +117,7 @@ object SSHMsg:
 
 /**
     - SSH-protoversion-softwareversion SP comments CR LF
-    - BinaryProtocol
+    - BinaryPacket
  */
 enum Transport:
     case Identification(version:String)
@@ -129,7 +129,7 @@ enum Transport:
       byte[m]   mac (Message Authentication Code - MAC); m = mac_length
       oboslete
     */
-    case BinaryProtocol(
+    case BinaryPacket(
         len:Int,
         pad:Byte,
         magic:Byte,
