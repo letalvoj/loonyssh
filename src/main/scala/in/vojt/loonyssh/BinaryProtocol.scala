@@ -17,38 +17,37 @@ import scala.collection.mutable.ArrayBuffer
 // so far all these ops are unsafe
 trait BinaryProtocol:
 
-    protected def _getInt:Int
-    protected def _get:Byte
-    protected def _getByteArray(n:Int):Array[Byte]
+    protected def unsafeGetInt:Int
+    protected def unsafeGet:Byte
+    protected def unsafeGetByteArray(n:Int):Array[Byte]
 
-    protected def _putInt(v:Int):Unit
-    protected def _put(v:Byte):Unit
-    protected def _putByteArray(v:Array[Byte]):Unit
+    protected def unsafePutInt(v:Int):Unit
+    protected def unsafePut(v:Byte):Unit
+    protected def unsafePutByteArray(v:Array[Byte]):Unit
 
     def flush:Unit
     def sn:String
 
-    def getInt:Int = log(s"> I <<<-$sn ", _getInt, identity)
-    def get:Byte   = log(s"> B <<<-$sn ", _get, identity)
-    def getByteArray(n:Int):Array[Byte] = log(
-        s"> A <<<-$sn ", _getByteArray(n), 
-        arr => s"[${arr.map(toChar).mkString.take(130)}...]"
-    )
+    def getInt:ErrOr[Int] = log("I", unsafeGetInt, identity)
+    def get:ErrOr[Byte]   = log("B", unsafeGet, identity)
+    def getByteArray(n:Int):ErrOr[Array[Byte]] = 
+        log("A", unsafeGetByteArray(n), orArr => orArr.map(arr => s"[${arr.map(toChar).mkString.take(130)}...]"))
 
-    def putInt(v:Int):Unit =
-        _putInt(v)
+    def putInt(v:Int):ErrOr[Unit] =
         println(s"> I $sn->>> $v")
+        ErrOr.catchIO(unsafePutInt(v))
 
-    def put(v:Byte):Unit =
-        _put(v)
+    def put(v:Byte):ErrOr[Unit] =
         println(s"> B $sn->>> $v")
+        ErrOr.catchIO(unsafePut(v))
 
-    def putByteArray(v:Array[Byte]):Unit =
-        _putByteArray(v)
+    def putByteArray(v:Array[Byte]):ErrOr[Unit] =
         println(s"> A $sn->>> [${v.map(toChar).mkString.take(130)}...]")
+        ErrOr.catchIO(unsafePutByteArray(v))
 
-    private def log[V,O](prefix:String, v:V, format:V=>O):V = 
-        println(s"$prefix ${format(v)}")
+    private def log[V,O](tp:String, eventualV: => V, format:ErrOr[V]=>O):ErrOr[V] = 
+        val v = ErrOr.catchIO(eventualV)
+        println(s"> $tp $sn->>> ${format(v)}")
         return v
 
     private def toChar(i:Byte) = if(i > 32 && i < 127) i.toChar.toString else f"\u${i}%02X"
@@ -60,27 +59,27 @@ object BinaryProtocol:
         ByteBufferBinaryProtocol(bbi, bbo)
     
 case class InputStreamBinaryProtocol(is: InputStream, os: OutputStream) extends BinaryProtocol:
-    def _getInt = ByteBuffer.wrap(is.readNBytes(4)).getInt
-    def _get = is.read.toByte
-    def _getByteArray(n:Int) = 
+    def unsafeGetInt = ByteBuffer.wrap(is.readNBytes(4)).getInt
+    def unsafeGet = is.read.toByte
+    def unsafeGetByteArray(n:Int) = 
         println(s"> Avail <? ${is.available()} Req $n")
         is.readNBytes(n)
 
-    def _putInt(v:Int):Unit = os.write(ByteBuffer.allocate(4).putInt(v).array)
-    def _put(v:Byte):Unit = os.write(Array[Byte](v))
-    def _putByteArray(v:Array[Byte]):Unit = os.write(v)
+    def unsafePutInt(v:Int) = os.write(ByteBuffer.allocate(4).putInt(v).array)
+    def unsafePut(v:Byte) = os.write(Array[Byte](v))
+    def unsafePutByteArray(v:Array[Byte]) = os.write(v)
 
     def flush:Unit = os.flush
     val sn = "is"
 
 case class ByteBufferBinaryProtocol(bbi: ByteBuffer, bbo: ByteBuffer) extends BinaryProtocol:
-    def _getInt = bbi.getInt
-    def _get = bbi.get
-    def _getByteArray(n:Int) = if(n > 0) Array.fill(n)(bbi.get) else Array.empty
+    def unsafeGetInt = bbi.getInt
+    def unsafeGet = bbi.get
+    def unsafeGetByteArray(n:Int) = if(n > 0) Array.fill(n)(bbi.get) else Array.empty
 
-    def _putInt(v:Int):Unit               = bbo.putInt(v)
-    def _put(v:Byte):Unit                 = bbo.put(v)
-    def _putByteArray(v:Array[Byte]):Unit = bbo.put(v)
+    def unsafePutInt(v:Int)               = bbo.putInt(v)
+    def unsafePut(v:Byte)                 = bbo.put(v)
+    def unsafePutByteArray(v:Array[Byte]) = bbo.put(v)
 
     def flush:Unit = ()
     val sn = "bb"

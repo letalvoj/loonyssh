@@ -36,6 +36,7 @@ val sshProtocol = for
     _          <- SSH.write(SSHWriter.wrap(Kex))
     (kxO, kxB) <- SSH.fromBinaryPacket[SSHMsg.KexInit]
     _          = println((kxO, kxB))
+    // todo dh exchange
     _          <- SSH.write(SSHWriter.wrap(SSHMsg.NewKeys))
 yield
     kxO

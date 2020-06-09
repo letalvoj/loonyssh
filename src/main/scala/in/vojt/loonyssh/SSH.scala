@@ -16,7 +16,7 @@ import scala.util.control.NonFatal
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
-trait SSH[S]: // IO / State monad?
+trait SSH[S]:
     def read(t: BinaryProtocol): ErrOr[S]
 
     // cats &| other FP lib
@@ -50,27 +50,33 @@ object SSH:
 
     given SSH[Unit] = bb => Right(())
 
-    given SSH[Transport.Identification] = bb => ErrOr catchNonFatal {
-        new Transport.Identification(new String(readIdentification(bb)).trim)
-    }
+    given SSH[Transport.Identification] = bb => 
+        readIdentification(bb).map(arr => new Transport.Identification(new String(arr).trim))
 
-    private def readIdentification(bb:BinaryProtocol):Array[Byte] =
-        val buf = new ArrayBuffer[Byte](100)
-        @tailrec def loop(prev:Byte):ArrayBuffer[Byte] = Seq(prev, bb.get.toByte) match {
-            case crlf@Seq('\r','\n') =>
-                buf.appendAll(crlf)
-            case Seq(prev, curr) =>
-                buf.append(prev)
+    private def readIdentification(bin:BinaryProtocol):ErrOr[Array[Byte]] =
+        val buf = new ArrayBuffer[Byte](1024)
+        @tailrec def loop(prev:Byte):ErrOr[ArrayBuffer[Byte]] = (prev, bin.get) match {
+            case (_, e@Left(_)) => e.asInstanceOf
+            case ('\r',Right('\n')) =>
+                buf.appended('\r')
+                buf.appended('\n')
+                Right(buf)
+            case (prev, Right(curr)) =>
+                buf.appended(prev)
                 loop(curr)
         }
-        loop(bb.get).toArray[Byte]
+        for
+            curr <- bin.get
+            buf <- loop(curr)
+        yield
+            buf.toArray[Byte]
 
 
-    given SSH[Int]  = bb => ErrOr.catchNonFatal(bb.getInt)
-    given SSH[Byte] = bb => ErrOr.catchNonFatal(bb.get)
+    given SSH[Int]  = bb => bb.getInt
+    given SSH[Byte] = bb => bb.get
 
     inline def arrayReader(n:Int):SSH[Array[Byte]] =
-        bb => ErrOr.catchNonFatal(bb.getByteArray(n))
+        bb => bb.getByteArray(n)
 
     given SSH[String] = for {
         n <- SSH[Int]
@@ -83,7 +89,6 @@ object SSH:
         magic <- SSH[Byte]
         payload <- arrayReader(lm - lp - 2)
         padding <- arrayReader(lp)
-        _ = println(s"got padding of len ${padding.size}")
         mac <- arrayReader(0)
     } yield new Transport.BinaryPacket(lm,lp,magic,payload,padding,mac)
 

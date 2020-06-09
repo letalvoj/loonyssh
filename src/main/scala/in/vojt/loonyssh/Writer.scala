@@ -12,15 +12,12 @@ import scala.util.control.NonFatal
 
 trait SSHWriter[V]: // IO / Writer monad? then we could you flatmap
     
-    protected def writeUnsafe(value:V, bp: BinaryProtocol): Unit  // the os param could be implicit
-
-    def write(value:V, bp: BinaryProtocol): ErrOr[Unit] =
-        ErrOr.catchIO(writeUnsafe(value, bp))
+    def write(value:V, bp: BinaryProtocol): ErrOr[Unit]
     
     // cats &| other FP lib
     def coMap[W](f:W=>V):SSHWriter[W] = new SSHWriter[W]:
-        def writeUnsafe(value:W, bp: BinaryProtocol): Unit =
-            SSHWriter.this.writeUnsafe(f(value),bp)
+        def write(value:W, bp: BinaryProtocol): ErrOr[Unit] =
+            SSHWriter.this.write(f(value),bp)
             
 object SSHWriter:
 
@@ -29,7 +26,8 @@ object SSHWriter:
     given intWriter as SSHWriter[Int] = (i, bp) => bp.putInt(i)
     given byteWriter as SSHWriter[Byte] = (b, bp) => bp.put(b)
     given arrayWriter as SSHWriter[Array[Byte]] = (b, bp) => bp.putByteArray(b)
-    given seqWriter[V:SSHWriter] as SSHWriter[Seq[V]] = (s, bp) => s.foreach(v => SSHWriter[V].write(v, bp))
+    given seqWriter[V:SSHWriter] as SSHWriter[Seq[V]] = (s, bp) => 
+        ErrOr.traverse(s.map(v => SSHWriter[V].write(v, bp)).toList).map(_ => ())
 
     given stringWriter as SSHWriter[String] = (s, bp) => {
         SSHWriter[Int].write(s.length, bp)
@@ -78,7 +76,6 @@ object SSHWriter:
     inline given productWriter[V:ClassTag](using m: Mirror.ProductOf[V]) as SSHWriter[V] = (p:V, bp) => {
         println(s"> P --->>> $p (${p.getClass})")
         writeProduct[m.MirroredElemTypes](p.asInstanceOf)(bp)(0)
-        bp.flush
     }
     inline given enumWriter[V<:Enum:ClassTag](using w: EnumSupport[V]) as SSHWriter[V] = SSHWriter[String].coMap{x => 
         println(s"> E --->>> $x, $w, ${summon[ClassTag[V]]}")
@@ -87,17 +84,21 @@ object SSHWriter:
     inline given enumListWriter[V<:Enum:ClassTag](using w: EnumSupport[V]) as SSHWriter[NameList[V]] = SSHWriter[String].coMap{
         es => es.names.map(w.toName).mkString(",")
     }
-    inline private def writeProduct[T](p:Product)(bp: BinaryProtocol)(i:Int):Unit = inline erasedValue[T] match
+    inline private def writeProduct[T](p:Product)(bp: BinaryProtocol)(i:Int):ErrOr[Unit] = inline erasedValue[T] match
         case _: (t *: ts) =>
-            summonInline[SSHWriter[t]].write(productElement[t](p,i),bp)
-            writeProduct[ts](p)(bp)(i+1)
-        case _: Unit => ()
+            for
+                _ <- summonInline[SSHWriter[t]].write(productElement[t](p,i),bp)
+                _ <- writeProduct[ts](p)(bp)(i+1)
+            yield ()
+        case _: Unit => Right(())
 
-    inline private def writeEnum[T](p:Product)(bp: BinaryProtocol)(i:Int):Unit = inline erasedValue[T] match
+    inline private def writeEnum[T](p:Product)(bp: BinaryProtocol)(i:Int):ErrOr[Unit] = inline erasedValue[T] match
         case _: (t *: ts) =>
-            summonInline[SSHWriter[t]].write(productElement[t](p,i),bp)
-            writeProduct[ts](p)(bp)(i+1)
-        case _: Unit => ()
+            for
+                _ <- summonInline[SSHWriter[t]].write(productElement[t](p,i),bp)
+                _ <- writeProduct[ts](p)(bp)(i+1)
+            yield ()
+        case _: Unit => Right(())
 
     inline private def nameList[V:ClassTag](toString: V => String): SSHWriter[NameList[V]] = (nl, bp) =>
         SSHWriter[String].write(nl.names.map(toString).mkString(","), bp)
