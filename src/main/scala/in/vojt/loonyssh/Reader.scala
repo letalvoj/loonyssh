@@ -25,19 +25,21 @@ trait SSHReader[S]: // IO / State monad?
         def read(t: BinaryParser): ErrOr[W] =
             SSHReader.this.read(t).map(f).flatMap(r => r.read(t))
 
-    def fromBinaryPacket:SSHReader[S] = new SSHReader[S]:
-        def read(t: BinaryParser): ErrOr[S] = for {
-            bp <- SSHReader[Transport.BinaryProtocol].read(t)
-            bbp = ByteBufferBinaryParser(bp.payload)
-            s  <- SSHReader.this.read(bbp)
-        } yield s
-
 object SSHReader:
 
     inline def apply[S](using impl: SSHReader[S]):SSHReader[S] = impl
 
     inline def pure[S](s:S):SSHReader[S] = pure(Right(s))
     inline def pure[S](eos:ErrOr[S]):SSHReader[S] = t => eos
+
+    def fromBinaryPacket[S:SSHReader]:SSHReader[(S,Transport.BinaryProtocol)] = new SSHReader:
+        def read(t: BinaryParser) = for {
+            bp <- SSHReader[Transport.BinaryProtocol].read(t)
+            bbp = ByteBufferBinaryParser(bp.payload)
+            s  <- SSHReader[S].read(bbp)
+        } yield (s, bp)
+
+    given SSHReader[Unit] = bb => Right(())
 
     given SSHReader[Transport.Identification] = bb => ErrOr catchNonFatal {
         new Transport.Identification(new String(readIdentification(bb)).trim)
@@ -55,11 +57,11 @@ object SSHReader:
         loop(bb.get).toArray[Byte]
 
 
-    given SSHReader[Int]  = bb => ErrOr catchNonFatal bb.getInt
-    given SSHReader[Byte] = bb => ErrOr catchNonFatal bb.get
+    given SSHReader[Int]  = bb => ErrOr.catchNonFatal(bb.getInt)
+    given SSHReader[Byte] = bb => ErrOr.catchNonFatal(bb.get)
 
     inline def arrayReader(n:Int):SSHReader[Array[Byte]] =
-        bb => ErrOr catchNonFatal bb.getByteArray(n)
+        bb => ErrOr.catchNonFatal(bb.getByteArray(n))
 
     given SSHReader[String] = for {
         n <- SSHReader[Int]
@@ -100,14 +102,22 @@ object SSHReader:
             reader.read(br) *: readProduct[ts](br)(i+1)
         case _: Unit => ()
 
-    inline given enumReader[V <: Enum](using e:EnumSupport[V]) as SSHReader[V] =
-        SSHReader[String].map(parseOrUnknown[V](_))
+    inline given enumReader[V <: Enum: ClassTag](using e:EnumSupport[V]) as SSHReader[V] =
+        SSHReader[String].flatMap(name => SSHReader.pure(parseOrUnknown[V](name)))
 
     inline given nameListEnumReader[V <: Enum: ClassTag](using e: EnumSupport[V]) as SSHReader[NameList[V]] =
-        SSHReader[String].map(s => NameList(s.split(",").map(parseOrUnknown[V](_)).toList))
+        SSHReader[String].flatMap(s => {
+            val errOrs = s.split(",").map(parseOrUnknown[V](_)).toList
+            val errOrList = ErrOr.traverse(errOrs).map(NameList(_))
+            SSHReader.pure(errOrList)
+        })
 
-    inline def parseOrUnknown[V<:Enum](name:String)(using sup:EnumSupport[V]) =
-        sup.fromName.get(name).getOrElse(sup.byName("Unknown", Tuple1(name)).get)
+    inline def parseOrUnknown[V<:Enum](name:String)(using sup:EnumSupport[V], ct:ClassTag[V]):ErrOr[V] =
+        sup.fromName.get(name).orElse{
+            sup.byName("Unknown", Tuple1(name))
+        }.toRight{
+            Err.Unk(ct.runtimeClass.toString, "Unknown")
+        }
 
     trait ByKey[V <: Enum, K: SSHReader](f:V => K):
         def values: Array[V] // hack to expose values from Enum companion object

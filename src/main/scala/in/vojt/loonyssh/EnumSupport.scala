@@ -12,12 +12,8 @@ trait EnumSupport[E<:Enum]:
 
 object EnumSupport:
     inline given values[E<:Enum](using m: Mirror.SumOf[E]) as EnumSupport[E] = new EnumSupport:
-        
-        override val fromName = 
-            _fromName[E, m.MirroredElemTypes, m.MirroredElemLabels]
-
-        override val toName = fromName.map((k,v) => (v,k))
-
+        override val fromName = _fromName[E, m.MirroredElemTypes, m.MirroredElemLabels]
+        override val toName   = fromName.map((k,v) => (v,k))
         override def byName(name:String, params:Product):Option[E] =
             _byName[E, m.MirroredElemTypes, m.MirroredElemLabels](name, params)
 

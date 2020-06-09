@@ -16,18 +16,17 @@ import scala.collection.mutable.ArrayBuffer
 trait BinaryParser:
     def getInt:Int =
         val res = _getInt
-        println(s"getInt ->          $res")
+        println(s"> I <<<--- $res")
         res
 
     def get:Byte =
         val res = _get
-        println(s"get ->             $res")
+        println(s"> B <<<--- $res")
         res
 
     def getByteArray(n:Int):Array[Byte] =
-        println(s"getByteArray($n)")
         val res = _getByteArray(n)
-        println(s"getByteArray ->    ${res.map(toChar).mkString.take(130)}...")
+        println(s"> A <<<--- [${res.map(toChar).mkString.take(130)}...]")
         res
 
 
@@ -41,15 +40,13 @@ case class InputStreamBinaryParser(is: InputStream) extends BinaryParser:
     def _getInt = ByteBuffer.wrap(is.readNBytes(4)).getInt
     def _get = is.read.toByte
     def _getByteArray(n:Int) = 
-        println(s"available <- ${is.available()}")
+        println(s"> Avail <? ${is.available()}")
         is.readNBytes(n)
-
 
 case class ByteBufferBinaryParser(bb: ByteBuffer) extends BinaryParser:
     def _getInt = bb.getInt
     def _get = bb.get
     def _getByteArray(n:Int) = if(n > 0) Array.fill(n)(bb.get) else Array.empty
-
 
 object ByteBufferBinaryParser:
     def apply(array:Array[Byte]) = new ByteBufferBinaryParser(ByteBuffer.wrap(array))

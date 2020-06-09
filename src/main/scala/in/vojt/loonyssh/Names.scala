@@ -1,5 +1,7 @@
 package in.vojt.loonyssh
 
+import scala.annotation.alpha
+
 enum DisconnectCode(val code:Int):
     case HostNotAllowedToConnect     extends DisconnectCode(1)
     case ProtocolError               extends DisconnectCode(2)
@@ -144,73 +146,118 @@ enum PseudoTerminalModes(val code:Int):
 object PseudoTerminalModes extends SSHReader.ByKey[PseudoTerminalModes, Int](_.code)
 
 enum Service:
+    @alpha("ssh-userauth")
     case `ssh-userauth`
+    @alpha("ssh-connection")
     case `ssh-connection`
 
 enum AuthenticationMethod:
+    @alpha("publickey")
     case `publickey`
+    @alpha("password")
     case `password`
+    @alpha("hostBased")
     case `hostBased`
+    @alpha("none")
     case `none`
 
 enum ConnectionProtocolChannelType:
+    @alpha("session")
     case `session`
+    @alpha("x11")
     case `x11`
+    @alpha("forwarded-tcpip")
     case `forwarded-tcpip`
+    @alpha("direct-tcpip")
     case `direct-tcpip`
 
 enum ConnectionProtocolRequestType:
+    @alpha("tcpip-forward")
     case `tcpip-forward`
+    @alpha("cancel-tcpip-forward")
     case `cancel-tcpip-forward`
 
 enum ConnectionProtocolChannelRequestName:
+    @alpha("pty-req")
     case `pty-req`
+    @alpha("x11-req")
     case `x11-req`
+    @alpha("env")
     case `env`
+    @alpha("shell")
     case `shell`
+    @alpha("exec")
     case `exec`
+    @alpha("subsystem")
     case `subsystem`
+    @alpha("window-change")
     case `window-change`
+    @alpha("xon-xoff")
     case `xon-xoff`
+    @alpha("signal")
     case `signal`
+    @alpha("exit-status")
     case `exit-status`
+    @alpha("exit-signal")
     case `exit-signal`
 
 enum SignalName:
+    @alpha("ABRT")
     case `ABRT`
+    @alpha("ALRM")
     case `ALRM`
+    @alpha("FPE")
     case `FPE`
+    @alpha("HUP")
     case `HUP`
+    @alpha("ILL")
     case `ILL`
+    @alpha("INT")
     case `INT`
+    @alpha("KILL")
     case `KILL`
+    @alpha("PIPE")
     case `PIPE`
+    @alpha("QUIT")
     case `QUIT`
+    @alpha("SEGV")
     case `SEGV`
+    @alpha("TERM")
     case `TERM`
+    @alpha("USR1")
     case `USR1`
+    @alpha("USR2")
     case `USR2`
 
 enum KeyExchangeMethod:
+    @alpha("ecdh-sha2-nistp256")
     case `ecdh-sha2-nistp256`
     case Unknown(value:String)
 
 enum EncryptionAlgorithm:
+    @alpha("aes128-ctr")
     case `aes128-ctr`
+    @alpha("none")
     case `none`
     case Unknown(value:String)
 
 enum MACAlgorithm:
-    case `hmac-sha1` //    case `hmac-sha2-256`
+    @alpha("hmac-sha1")
+    case `hmac-sha1`
+    @alpha("hmac-sha2-256")
+    case `hmac-sha2-256`
+    @alpha("none")
     case `none`
     case Unknown(value:String)
 
 enum PublicKeyAlgorithm:
+    @alpha("ssh-rsa") 
     case `ssh-rsa`
+    @alpha("ssh-ed25519") 
     case `ssh-ed25519`
     case Unknown(value:String)
 
 enum CompressionAlgorithm:
-    case `zlib`
-    case `none`
+    case zlib
+    case none
     case Unknown(value:String)

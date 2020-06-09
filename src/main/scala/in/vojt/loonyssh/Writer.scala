@@ -11,25 +11,29 @@ import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
 trait SSHWriter[V]: // IO / Writer monad? then we could you flatmap
-    def write(value:V, os: OutputStream): Unit // the os param could be implicit
+    
+    protected def writeUnsafe(value:V, os: OutputStream): Unit  // the os param could be implicit
+
+    def write(value:V, os: OutputStream): ErrOr[Unit] =
+        ErrOr.catchIO(writeUnsafe(value, os))
     
     // cats &| other FP lib
     def coMap[W](f:W=>V):SSHWriter[W] = new SSHWriter[W]:
-        def write(value:W, os: OutputStream): Unit =
-            SSHWriter.this.write(f(value),os)
+        def writeUnsafe(value:W, os: OutputStream): Unit =
+            SSHWriter.this.writeUnsafe(f(value),os)
             
 object SSHWriter:
 
     inline def apply[V](using impl: SSHWriter[V]):SSHWriter[V] = impl
 
     given intWriter as SSHWriter[Int] = (i, os) =>
-        println(s"I --->>> ${i}")
+        println(s"> I --->>> ${i}")
         os.write(ByteBuffer.allocate(4).putInt(i).array)
     given byteWriter as SSHWriter[Byte] = (b, os) =>
-        println(s"B --->>> ${b}")
+        println(s"> B --->>> ${b}")
         os.write(b)
     given arrayWriter as SSHWriter[Array[Byte]] = (b, os) =>
-        println(s"A --->>> ${b.toSeq}")
+        println(s"> A --->>> ${b.toSeq}")
         os.write(b)
     given seqWriter[V:SSHWriter] as SSHWriter[Seq[V]] = (s, os) => s.foreach(v => SSHWriter[V].write(v, os))
 
@@ -38,7 +42,9 @@ object SSHWriter:
         SSHWriter[Array[Byte]].write(s.getBytes, os)
     }
 
-    given SSHWriter[Transport.Identification] = (i, os) => SSHWriter[String].write(i.version, os)
+    given identification as SSHWriter[Transport.Identification] = (iden, os) => 
+        println(s"> I --->>> $identification")
+        SSHWriter[Array[Byte]].write(iden.version.getBytes, os)
 
     def wrap[V<:SSHMsg[Byte]:SSHWriter](value:V, cypherBlockSize:Int=0): Transport.BinaryProtocol = {
             val CypherBlockSize=8 // nonsense // size excluding mac should be min 8
@@ -60,7 +66,7 @@ object SSHWriter:
                 padding += blockSize
 
 
-            println(s"BP --->>> ${4} ${1} ${payload.length} ${padding}")
+            println(s"> BP --->>> ${4} ${1} ${payload.length} ${padding}")
 
             new Transport.BinaryProtocol(
                 meat+padding,
@@ -72,20 +78,20 @@ object SSHWriter:
             )
     }
 
-
     inline given knownLengthSeqWriter[L<:Int,T](using wr:SSHWriter[Seq[T]]) as SSHWriter[LSeq[L,T]] = (ls, os) => wr.write(ls.toSeq, os)
 
     inline given productWriter[V:ClassTag](using m: Mirror.ProductOf[V]) as SSHWriter[V] = (p:V, os) => {
-        println(s"P --->>> $p (${p.getClass})")
+        println(s"> P --->>> $p (${p.getClass})")
         writeProduct[m.MirroredElemTypes](p.asInstanceOf)(os)(0)
         os.flush
     }
-
-    inline given enumWriter[V<:Enum:ClassTag](using w: EnumSupport[V]) as SSHWriter[V] = SSHWriter[String].coMap(w.toName)
+    inline given enumWriter[V<:Enum:ClassTag](using w: EnumSupport[V]) as SSHWriter[V] = SSHWriter[String].coMap{x => 
+        println(s"> E --->>> $x, $w, ${summon[ClassTag[V]]}")
+        w.toName(x)
+    }
     inline given enumListWriter[V<:Enum:ClassTag](using w: EnumSupport[V]) as SSHWriter[NameList[V]] = SSHWriter[String].coMap{
         es => es.names.map(w.toName).mkString(",")
     }
-
     inline private def writeProduct[T](p:Product)(os: OutputStream)(i:Int):Unit = inline erasedValue[T] match
         case _: (t *: ts) =>
             summonInline[SSHWriter[t]].write(productElement[t](p,i),os)

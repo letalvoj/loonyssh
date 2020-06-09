@@ -29,26 +29,22 @@ val Kex =
         kexFirstPacketFollows = 0,
         reserved = 0)
 
+val sshProtocol = for
+    _          <- SSHIO.write(new Transport.Identification(IdentificationString))
+    sIs        <- SSHIO[Transport.Identification]
+    _           = println(sIs)
+    _          <- SSHIO.write(SSHWriter.wrap(Kex))
+    (kxO, kxB) <- SSHIO.fromBinaryPacket[SSHMsg.KexInit]
+    // kxT <- SSHIO.fromBinaryPacket[SSHMsg.KexInit]
+    // (kxO, kxB) = kxT
+    _          = println((kxO, kxB))
+    _          <- SSHIO.write(SSHWriter.wrap(SSHMsg.NewKeys))
+yield
+    kxO
+
 def connect(bis: BufferedInputStream, bos: BufferedOutputStream) = 
-    bos.write(IdentificationString.getBytes)
-    bos.flush
-    
-    val isbr = InputStreamBinaryParser(bis)
-
-    val reader = for
-        ident  <- SSHReader[Transport.Identification]
-        kex    <- SSHReader[SSHMsg.KexInit].fromBinaryPacket
-        _      =  SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(Kex), bos)
-        // missing DH exchange step
-        _      =  SSHWriter[Transport.BinaryProtocol].write(SSHWriter.wrap(SSHMsg.NewKeys), bos)
-        // yay! almost monadic!
-        // now I will have to merge Reader and Writer to some IO to be able to flatmap on both ...
-    yield
-        println(kex)
-        kex
-
-    reader.read(isbr)
-
+    val res = sshProtocol.run(bis, bos)
+    println("RESULT:" + res)        
     //  import com.jcraft.jsch.jce.AES128CTR
     //  import com.jcraft.jsch.{DHEC256, Utils, WrapperIO, WrapperSession}
     //  val dh = new DHEC256(ident.getBytes, IdentificationString.getBytes, ???, ???)

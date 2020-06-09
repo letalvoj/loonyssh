@@ -12,7 +12,8 @@ import scala.util.control.NonFatal
 
 enum Err:
     case Exc(e:Exception)
-    case Unk[K](e:String, k:K)
+    case Unk[K](expl:String, k:K)
+    case Oth[K](expl:String)
 
 type ErrOr[V] = Either[Err, V]
 
@@ -26,7 +27,7 @@ object ErrOr:
     def traverse(t:Tuple):ErrOr[Tuple] = t match
         case e *: ts =>
             for
-                r <- e.asInstanceOf[ErrOr[_]]
+                r <- e.asInstanceOf[ErrOr[?]]
                 rs <- traverse(ts)
             yield r *: rs
         case _:Tuple => Right(())
