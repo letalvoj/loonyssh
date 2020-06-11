@@ -1,6 +1,6 @@
 package in.vojt.loonyssh.bootstrapping
 
-import java.nio.file.Path
+import java.nio.file.{Path, Paths, Files}
 
 import in.vojt.loonyssh.Loggers
 import org.apache.sshd.server.SshServer
@@ -16,7 +16,7 @@ object Server {
     val sshd = SshServer.setUpDefaultServer()
     sshd.setPasswordAuthenticator((username, password, session) => true)
     sshd.setKeyPairProvider(session => List.empty.asJava)
-    sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(Path.of("server.key")))
+    sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(Paths.get("server.key")))
     sshd.setPort(20002)
     sshd.setHost("localhost")
 

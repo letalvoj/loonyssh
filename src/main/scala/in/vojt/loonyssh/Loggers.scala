@@ -12,7 +12,7 @@ object Loggers {
   def configureLogger(): Unit = {
     val stream = this.getClass.getClassLoader.getResourceAsStream("in/vojt/loonyssh/logging.properties")
     JLogger.getGlobal.addHandler(new ConsoleHandler() {
-      setLevel(Level.ALL)
+       setLevel(Level.ALL)
     })
     LogManager.getLogManager.readConfiguration(stream)
   }

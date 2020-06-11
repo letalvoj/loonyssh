@@ -1,6 +1,6 @@
 package in.vojt.loonyssh
 
-trait SSHMsg[M<:Byte](val magic:M)
+trait SSHMsg(val magic:Byte)
 
 object SSHMsg:
 
@@ -136,3 +136,26 @@ enum Transport:
         payload:Array[Byte],
         padding:Array[Byte],
         mac:Array[Byte])
+
+object Transport:
+    def apply(magic:Byte, data:Array[Byte])(using ctx:SSHContext):Transport.BinaryPacket =
+        val length = 4 + 2 + data.size
+
+        val blockSize = ctx.cypherBlockSize max 8
+        val minPadding = (blockSize - 1) & (-length)
+        val padding = 
+            if(minPadding < blockSize)
+                (minPadding + blockSize)
+            else
+                minPadding
+
+        println(s"> BP --->>> ${4} ${1} ${data.length} ${padding}")
+
+        new Transport.BinaryPacket(
+            length + padding - 4,
+            padding.toByte,
+            magic,
+            data,
+            Array.fill(padding)(8),
+            Array.empty, // mac:none - for now
+        )

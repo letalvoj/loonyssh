@@ -30,7 +30,7 @@ object ErrOr:
                 r <- e.asInstanceOf[ErrOr[?]]
                 rs <- traverse(ts)
             yield r *: rs
-        case _:Tuple => Right(())
+        case t:Tuple => Right(t)
 
 
     def traverse[T](t:List[ErrOr[T]]):ErrOr[List[T]] = t match

@@ -3,8 +3,6 @@ package in.vojt.loonyssh
 import scala.deriving._
 import scala.compiletime._
 
-case object Product0
-
 trait EnumSupport[E<:Enum]:
     def fromName:Map[String, E]
     def toName:Map[E, String]
@@ -23,7 +21,7 @@ object EnumSupport:
             val mirror = summonInline[Mirror.ProductOf[t]]
             val additional:Map[String,E] =
                 try
-                    val value = mirror.fromProduct(Product0).asInstanceOf[E]
+                    val value = mirror.fromProduct(Tuple()).asInstanceOf[E]
                     Map(key -> value)
                 catch
                     // workaround for https://github.com/lampepfl/dotty/issues/9110
@@ -31,14 +29,12 @@ object EnumSupport:
                     case _:java.lang.IndexOutOfBoundsException => Map.empty
 
             _fromName[E,ts,ls] ++ additional
-        case _: (Unit, Unit) => Map.empty
+        case _: (Tuple, Tuple) => Map.empty
 
 
     inline private def _byName[E<:Enum,T,L](name:String, params:Product):Option[E] = inline erasedValue[(T,L)] match
         case _: (t *: ts, l *: ls) =>
             if constValue[l] == name then
                 Some(summonInline[Mirror.ProductOf[t]].fromProduct(params).asInstanceOf[E])
-            else
-                _byName[E,ts,ls](name, params)
-        case _: (Unit, Unit) =>
-            None
+            else _byName[E,ts,ls](name, params)
+        case _: (Tuple, Tuple) => None

@@ -35,9 +35,9 @@ object SSH:
     inline def pure[S](s:S):SSH[S] = pure(Right(s))
     inline def pure[S](eos:ErrOr[S]):SSH[S] = t => eos
 
-    def fromBinaryPacket[S:SSH]:SSH[(S,Transport.BinaryPacket)] = new SSH:
-        def read(t: BinaryProtocol) = for {
-            bp <- SSH[Transport.BinaryPacket].read(t)
+    def fromBinaryProtocol[S:SSH]:SSH[(S,Transport.BinaryPacket)] = bb =>
+        for {
+            bp <- SSH[Transport.BinaryPacket].read(bb)
             bbp = BinaryProtocol(
                 ByteBuffer.wrap(bp.payload),
                 ByteBuffer.allocate(0)
@@ -45,8 +45,20 @@ object SSH:
             s  <- SSH[S].read(bbp)
         } yield (s, bp)
 
-    def write[S:SSHWriter](s:S):SSH[Unit] = 
-        bb => SSHWriter[S].write(s, bb).map(_ => bb.flush)
+    def overBinaryProtocol[V<:SSHMsg:SSHWriter](v:V)(using ctx:SSHContext):SSH[Unit] = iop =>
+        val bbp = BinaryProtocol(ByteBuffer.allocate(0),ByteBuffer.allocate(65536))
+        for
+            _ <- SSHWriter[V].write(v,bbp)
+            data = bbp.bbo.array.take(bbp.bbo.position)
+            _ <- SSHWriter[Transport.BinaryPacket].write(Transport(v.magic,data), iop)
+            _ <- ErrOr.catchIO(iop.flush)
+        yield ()
+
+    def plain[V:SSHWriter](v:V):SSH[Unit] = iop =>
+        for
+            _ <- SSHWriter[V].write(v,iop)
+            _ <- ErrOr.catchIO(iop.flush)
+        yield ()
 
     given SSH[Unit] = bb => Right(())
 
@@ -58,11 +70,11 @@ object SSH:
         @tailrec def loop(prev:Byte):ErrOr[ArrayBuffer[Byte]] = (prev, bin.get) match {
             case (_, e@Left(_)) => e.asInstanceOf
             case ('\r',Right('\n')) =>
-                buf.appended('\r')
-                buf.appended('\n')
+                buf.append('\r'.toByte)
+                buf.append('\n'.toByte)
                 Right(buf)
             case (prev, Right(curr)) =>
-                buf.appended(prev)
+                buf.append(prev)
                 loop(curr)
         }
         for
@@ -104,17 +116,14 @@ object SSH:
 
     inline given productReader[V<:Product:ClassTag](using m: Mirror.ProductOf[V]) as SSH[V] = br => {
         val p = readProduct[m.MirroredElemTypes](br)(0)
-        ErrOr.traverse(p).map{
-            case () => m.fromProduct(Product0) // Unit != Tuple
-            case t  => m.fromProduct(t.asInstanceOf)
-        }.asInstanceOf[ErrOr[V]]
+        ErrOr.traverse(p).map(m.fromProduct).asInstanceOf[ErrOr[V]]
     }
 
     inline private def readProduct[T](br: BinaryProtocol)(i:Int):Tuple = inline erasedValue[T] match
         case _: (t *: ts) =>
             val reader = summonInline[SSH[t]]
             reader.read(br) *: readProduct[ts](br)(i+1)
-        case _: Unit => ()
+        case _ => Tuple()
 
     inline given enumReader[V <: Enum: ClassTag](using e:EnumSupport[V]) as SSH[V] =
         SSH[String].flatMap(name => SSH.pure(parseOrUnknown[V](name)))
@@ -133,6 +142,10 @@ object SSH:
             Err.Unk(ct.runtimeClass.toString, "Unknown")
         }
 
+    inline given sSHMsgReader as SSH[SSHMsg] = bbp =>
+        // val mirror = summonInline[Mirror.Of[SSHMsg]]
+        ???
+    
     trait ByKey[V <: Enum, K: SSH](f:V => K):
         def values: Array[V] // hack to expose values from Enum companion object
         lazy val byKey = values.map{ x => f(x) -> x }.toMap

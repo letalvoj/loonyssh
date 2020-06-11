@@ -59,11 +59,16 @@ object BinaryProtocol:
         ByteBufferBinaryProtocol(bbi, bbo)
     
 case class InputStreamBinaryProtocol(is: InputStream, os: OutputStream) extends BinaryProtocol:
-    def unsafeGetInt = ByteBuffer.wrap(is.readNBytes(4)).getInt
+    def unsafeGetInt = 
+        val bb = ByteBuffer.allocate(4)
+        is.read(bb.array)
+        bb.getInt
     def unsafeGet = is.read.toByte
     def unsafeGetByteArray(n:Int) = 
         println(s"> Avail <? ${is.available()} Req $n")
-        is.readNBytes(n)
+        val arr = new Array[Byte](n)
+        is.read(arr)
+        arr
 
     def unsafePutInt(v:Int) = os.write(ByteBuffer.allocate(4).putInt(v).array)
     def unsafePut(v:Byte) = os.write(Array[Byte](v))
@@ -73,6 +78,8 @@ case class InputStreamBinaryProtocol(is: InputStream, os: OutputStream) extends 
     val sn = "is"
 
 case class ByteBufferBinaryProtocol(bbi: ByteBuffer, bbo: ByteBuffer) extends BinaryProtocol:
+    val sn = "bb"
+
     def unsafeGetInt = bbi.getInt
     def unsafeGet = bbi.get
     def unsafeGetByteArray(n:Int) = if(n > 0) Array.fill(n)(bbi.get) else Array.empty
@@ -82,9 +89,8 @@ case class ByteBufferBinaryProtocol(bbi: ByteBuffer, bbo: ByteBuffer) extends Bi
     def unsafePutByteArray(v:Array[Byte]) = bbo.put(v)
 
     def flush:Unit = ()
-    val sn = "bb"
 
     // inline private def unsuported: Unit =
     //     throw UnsupportedOperationException(
-    //         s"Never ${getClass.getSimpleName} to write.Should be used in fromBinaryPacket only."
+    //         s"Never ${getClass.getSimpleName} to write.Should be used in fromBinaryProtocol only."
     //     )

@@ -10,6 +10,6 @@
     // val bpis = new BufferedInputStream(pis)
 
     // SSHWriter[Transport.BinaryPacket].write(SSHWriter.wrap(Kex), pos)
-    // val kexRecoveder = SSHReader[BinaryPacket[SSHMsg.KexInit]].read(pis)
+    // val kexRecoveder = SSH[BinaryPacket[SSHMsg.KexInit]].read(pis)
     // println(Right(Kex) == kexRecoveder.map(_.payload)) // false
     // pos.close

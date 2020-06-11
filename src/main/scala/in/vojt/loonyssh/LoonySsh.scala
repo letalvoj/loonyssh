@@ -29,22 +29,26 @@ val Kex =
         kexFirstPacketFollows = 0,
         reserved = 0)
 
+implicit val ctx:SSHContext = SSHContext()
+
 val sshProtocol = for
-    _          <- SSH.write(new Transport.Identification(IdentificationString))
+    _ <- SSH.pure(1)
+    _          <- SSH.plain(new Transport.Identification(IdentificationString))
     sIs        <- SSH[Transport.Identification]
-    _           = println(sIs)
-    _          <- SSH.write(SSHWriter.wrap(Kex))
-    (kxO, kxB) <- SSH.fromBinaryPacket[SSHMsg.KexInit]
-    _          = println((kxO, kxB))
-    // todo dh exchange
-    _          <- SSH.write(SSHWriter.wrap(SSHMsg.NewKeys))
+    // _           = println(sIs)
+    // _          <- SSH.overBinaryProtocol(Kex)
+    // (kxO, kxB) <- SSH.fromBinaryProtocol[SSHMsg.KexInit]
+    // _          = println(kxO)
+    // // // todo dh exchange
+    // _          <- SSH.overBinaryProtocol(SSHMsg.NewKeys)
+    _          <- SSH.fromBinaryProtocol[SSHMsg]
 yield
-    kxO
+    sIs
 
 def connect(bis: BufferedInputStream, bos: BufferedOutputStream) = 
     val errOrRes = sshProtocol.read(BinaryProtocol(bis,bos))
     errOrRes match{
-        case Right(res) => println("RESULT:" + res)        
+        case Right(res) => println(s"RESULT: $res")        
         case Left(Err.Exc(e)) => throw e
         case Left(o) => System.err.println(o)
     }
@@ -54,6 +58,7 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
     //  val dh = new DHEC256(ident.getBytes, IdentificationString.getBytes, ???, ???)
     //  dh.init(sess)
 
+    
     println("Remaining:")
     LazyList.continually(bis.read).
         map(c => f"${c}%02X-").
@@ -61,6 +66,8 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
         foreach(print)
 
 @main def LoonySSH():Unit =
+    SSH.fromBinaryProtocol[SSHMsg]
+
     val soc = new Socket("sdf.org", 22)
     // val soc = new Socket("testing_docker_container", 12345) 
     // val soc = new Socket("localhost", 20002) 
