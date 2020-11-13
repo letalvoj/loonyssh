@@ -61,7 +61,5 @@ object JSChTesting {
 
     channel.connect()
     session.disconnect()
-
   }
-
 }

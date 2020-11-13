@@ -8,6 +8,7 @@ import scala.deriving._
 import scala.compiletime._
 import scala.reflect.ClassTag
 import java.util.Random
+// import scala.deriving.constValue
 
 val ClientName = "LoonySSH"
 val ClientVersion = "0.0.1"
@@ -35,13 +36,13 @@ val sshProtocol = for
     _ <- SSH.pure(1)
     _          <- SSH.plain(new Transport.Identification(IdentificationString))
     sIs        <- SSH[Transport.Identification]
-    // _           = println(sIs)
-    // _          <- SSH.overBinaryProtocol(Kex)
-    // (kxO, kxB) <- SSH.fromBinaryProtocol[SSHMsg.KexInit]
-    // _          = println(kxO)
-    // // // todo dh exchange
-    // _          <- SSH.overBinaryProtocol(SSHMsg.NewKeys)
-    _          <- SSH.fromBinaryProtocol[SSHMsg]
+    _           = println(sIs)
+    _          <- SSH.overBinaryProtocol(Kex)
+    (kxO, kxB) <- SSH.fromBinaryProtocol[SSHMsg.KexInit]
+    _          = println(kxO)
+    // // todo dh exchange
+    _          <- SSH.overBinaryProtocol(SSHMsg.NewKeys)
+    // _          <- SSH.fromBinaryProtocol[SSHMsg]
 yield
     sIs
 
@@ -66,8 +67,6 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
         foreach(print)
 
 @main def LoonySSH():Unit =
-    SSH.fromBinaryProtocol[SSHMsg]
-
     val soc = new Socket("sdf.org", 22)
     // val soc = new Socket("testing_docker_container", 12345) 
     // val soc = new Socket("localhost", 20002) 

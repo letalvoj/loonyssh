@@ -142,9 +142,9 @@ object SSH:
             Err.Unk(ct.runtimeClass.toString, "Unknown")
         }
 
-    inline given sSHMsgReader as SSH[SSHMsg] = bbp =>
-        // val mirror = summonInline[Mirror.Of[SSHMsg]]
-        ???
+    // inline given sSHMsgReader as SSH[SSHMsg] = bbp =>
+    //     // val mirror = summonInline[Mirror.Of[SSHMsg]]
+    //     ???
     
     trait ByKey[V <: Enum, K: SSH](f:V => K):
         def values: Array[V] // hack to expose values from Enum companion object

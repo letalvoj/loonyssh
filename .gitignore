@@ -4,3 +4,6 @@ target/
 .dotty*
 
 parsed
+
+.bloop
+_site/
