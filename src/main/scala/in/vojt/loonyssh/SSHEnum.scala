@@ -1,3 +1,4 @@
+//noinspection ScalaUnusedSymbol
 package in.vojt.loonyssh
 
 import scala.annotation.targetName
@@ -21,7 +22,7 @@ enum DisconnectCode(val code:Int) extends SSHEnum:
     case NoMoreAuthMethodsAvailable  extends DisconnectCode(14)
     case IllegalUserName             extends DisconnectCode(15)
 
-object DisconnectCode extends SSH.ByKey[DisconnectCode, Int](_.code)
+object DisconnectCode extends SSHReader.ByKey[DisconnectCode, Int](_.code)
 
 enum ChannelOpenFailure(val code:Int) extends SSHEnum:
     case ADMINISTRATIVELY_PROHIBITED extends ChannelOpenFailure(1)
@@ -29,7 +30,7 @@ enum ChannelOpenFailure(val code:Int) extends SSHEnum:
     case UNKNOWN_CHANNEL_TYPE        extends ChannelOpenFailure(3)
     case RESOURCE_SHORTAGE           extends ChannelOpenFailure(4)
 
-object ChannelOpenFailure extends SSH.ByKey[ChannelOpenFailure, Int](_.code)
+object ChannelOpenFailure extends SSHReader.ByKey[ChannelOpenFailure, Int](_.code)
 
 enum PseudoTerminalModes(val code:Int) extends SSHEnum:
     /** Indicates end of options. */
@@ -114,7 +115,7 @@ enum PseudoTerminalModes(val code:Int) extends SSHEnum:
     case TOSTOP           extends PseudoTerminalModes(58)
     /** Enable extensions. */
     case IEXTEN           extends PseudoTerminalModes(59)
-    /** Echo control characters as ^(Char). */
+    /** Echo control characters as (Char).*/
     case ECHOCTL          extends PseudoTerminalModes(60)
     /** Visual erase for line kill. */
     case ECHOKE           extends PseudoTerminalModes(61)
@@ -145,7 +146,7 @@ enum PseudoTerminalModes(val code:Int) extends SSHEnum:
     /** Specifies the output baud rate in bits per second. */
     case TTY_OP_OSPEED    extends PseudoTerminalModes(129)
 
-object PseudoTerminalModes extends SSH.ByKey[PseudoTerminalModes, Int](_.code)
+object PseudoTerminalModes extends SSHReader.ByKey[PseudoTerminalModes, Int](_.code)
 
 enum Service extends SSHEnum:
     @targetName("ssh-userauth")

@@ -14,7 +14,7 @@ val ClientName = "LoonySSH"
 val ClientVersion = "0.0.1"
 val IdentificationString = s"SSH-2.0-${ClientName}_${ClientVersion}\r\n"
 
-val Kex = 
+val Kex =
     SSHMsg.KexInit(
         cookie = LSeq[4,Int](List.fill(4)(4)),
         kexAlgorithms = NameList(List(KeyExchangeMethod.`ecdh-sha2-nistp256`)),
@@ -33,41 +33,41 @@ val Kex =
 implicit val ctx:SSHContext = SSHContext()
 
 val sshProtocol = for
-    _          <- SSH.pure(Right(1))
-    _          <- SSH.plain(new Transport.Identification(IdentificationString))
-    sIs        <- SSH[Transport.Identification]
+    _          <- SSHReader.pure(Right(1))
+    _          <- SSHWriter.plain(new Transport.Identification(IdentificationString))
+    sIs        <- SSHReader[Transport.Identification]
     _          = println(sIs)
-    _          <- SSH.overBinaryProtocol(Kex)
-    kx         <- SSH.fromBinaryProtocol[SSHMsg.KexInit]
+    _          <- SSHWriter.overBinaryProtocol(Kex)
+    kx         <- SSHReader.fromBinaryProtocol[SSHMsg.KexInit]
     (kxO, kxB) = kx
     _          = println(kxO)
     // // todo dh exchange
-    _          <- SSH.overBinaryProtocol(SSHMsg.NewKeys)
-    // _          <- SSH.fromBinaryProtocol[SSHMsg]
+    _          <- SSHWriter.overBinaryProtocol(SSHMsg.NewKeys)
+    // _          <- SSHReader.fromBinaryProtocol[SSHMsg]
 yield
     sIs
 
-def connect(bis: BufferedInputStream, bos: BufferedOutputStream) = 
+def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
     val errOrRes = sshProtocol.read(BinaryProtocol(bis,bos))
     errOrRes match{
-        case Right(res) => println(s"RESULT: $res")        
+        case Right(res) => println(s"RESULT: $res")
         case Left(Err.Exc(e)) => throw e
         case Left(o) => System.err.println(o)
     }
-    
+
     //  import com.jcraft.jsch.jce.AES128CTR
     //  import com.jcraft.jsch.{DHEC256, Utils, WrapperIO, WrapperSession}
     //  val dh = new DHEC256(ident.getBytes, IdentificationString.getBytes, ???, ???)
     //  dh.init(sess)
 
-    
+
     println("Remaining:")
     LazyList.continually(bis.read).
         map(c => f"${c}%02X-").
         take(30).
         foreach(print)
 
-@main def LoonySSH():Unit =
+@main def Main():Unit =
     val soc = new Socket("sdf.org", 22)
     // val soc = new Socket("testing_docker_container", 12345) 
     // val soc = new Socket("localhost", 20002) 

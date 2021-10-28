@@ -22,6 +22,21 @@ object SSHWriter:
 
     inline def apply[V](using impl: SSHWriter[V]):SSHWriter[V] = impl
 
+    def overBinaryProtocol[V<:SSHMsg:SSHWriter](v:V)(using ctx:SSHContext):SSHReader[Unit] = iop =>
+        val bbp = BinaryProtocol(ByteBuffer.allocate(0),ByteBuffer.allocate(65536))
+        for
+            _ <- SSHWriter[V].write(v,bbp)
+            data = bbp.bbo.array.take(bbp.bbo.position)
+            _ <- SSHWriter[Transport.BinaryPacket].write(Transport(v.magic,data), iop)
+            _ <- ErrOr.catchIO(iop.flush)
+        yield ()
+
+    def plain[V:SSHWriter](v:V):SSHReader[Unit] = iop =>
+        for
+            _ <- SSHWriter[V].write(v,iop)
+            _ <- ErrOr.catchIO(iop.flush)
+        yield ()
+
     given intWriter: SSHWriter[Int] = (i, bp) => bp.putInt(i)
     given byteWriter: SSHWriter[Byte] = (b, bp) => bp.put(b)
     given arrayWriter: SSHWriter[Array[Byte]] = (b, bp) => bp.putByteArray(b)
