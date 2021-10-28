@@ -33,12 +33,13 @@ val Kex =
 implicit val ctx:SSHContext = SSHContext()
 
 val sshProtocol = for
-    _ <- SSH.pure(1)
+    _          <- SSH.pure(Right(1))
     _          <- SSH.plain(new Transport.Identification(IdentificationString))
     sIs        <- SSH[Transport.Identification]
-    _           = println(sIs)
+    _          = println(sIs)
     _          <- SSH.overBinaryProtocol(Kex)
-    (kxO, kxB) <- SSH.fromBinaryProtocol[SSHMsg.KexInit]
+    kx         <- SSH.fromBinaryProtocol[SSHMsg.KexInit]
+    (kxO, kxB) = kx
     _          = println(kxO)
     // // todo dh exchange
     _          <- SSH.overBinaryProtocol(SSHMsg.NewKeys)
@@ -77,5 +78,5 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
     try
         connect(bis, bos)
     finally
-        bos.flush
-        soc.close
+        bos.flush()
+        soc.close()

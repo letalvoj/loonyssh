@@ -32,7 +32,6 @@ object SSH:
 
     inline def apply[S](using impl: SSH[S]):SSH[S] = impl
 
-    inline def pure[S](s:S):SSH[S] = pure(Right(s))
     inline def pure[S](eos:ErrOr[S]):SSH[S] = t => eos
 
     def fromBinaryProtocol[S:SSH]:SSH[(S,Transport.BinaryPacket)] = bb =>
@@ -62,13 +61,13 @@ object SSH:
 
     given SSH[Unit] = bb => Right(())
 
-    given SSH[Transport.Identification] = bb => 
+    given SSH[Transport.Identification] = bb =>
         readIdentification(bb).map(arr => new Transport.Identification(new String(arr).trim))
 
     private def readIdentification(bin:BinaryProtocol):ErrOr[Array[Byte]] =
         val buf = new ArrayBuffer[Byte](1024)
         @tailrec def loop(prev:Byte):ErrOr[ArrayBuffer[Byte]] = (prev, bin.get) match {
-            case (_, e@Left(_)) => e.asInstanceOf
+            case (_, e @ Left(_)) => e.asInstanceOf
             case ('\r',Right('\n')) =>
                 buf.append('\r'.toByte)
                 buf.append('\n'.toByte)
@@ -106,7 +105,7 @@ object SSH:
 
     given SSH[NameList[String]] = SSH[String].map(s => NameList(s.split(",").toList))
 
-    inline given lseqReader[L<:Int, T:ClassTag:SSH] as SSH[LSeq[L,T]] = br =>
+    inline given lseqReader[L<:Int, T:ClassTag:SSH]: SSH[LSeq[L,T]] = br =>
         val len = constValue[L]
         val list = List.fill(len)(SSH[T].read(br))
         for
@@ -114,7 +113,7 @@ object SSH:
         yield
             LSeq[L,T](l)
 
-    inline given productReader[V<:Product:ClassTag](using m: Mirror.ProductOf[V]) as SSH[V] = br => {
+    inline given productReader[V<:Product:ClassTag](using m: Mirror.ProductOf[V]): SSH[V] = br => {
         val p = readProduct[m.MirroredElemTypes](br)(0)
         ErrOr.traverse(p).map(m.fromProduct).asInstanceOf[ErrOr[V]]
     }
@@ -125,32 +124,32 @@ object SSH:
             reader.read(br) *: readProduct[ts](br)(i+1)
         case _ => Tuple()
 
-    inline given enumReader[V <: Enum: ClassTag](using e:EnumSupport[V]) as SSH[V] =
+    inline given enumReader[V <: SSHEnum: ClassTag](using e:EnumSupport[V]): SSH[V] =
         SSH[String].flatMap(name => SSH.pure(parseOrUnknown[V](name)))
 
-    inline given nameListEnumReader[V <: Enum: ClassTag](using e: EnumSupport[V]) as SSH[NameList[V]] =
+    inline given nameListEnumReader[V <: SSHEnum: ClassTag](using e: EnumSupport[V]): SSH[NameList[V]] =
         SSH[String].flatMap(s => {
             val errOrs = s.split(",").map(parseOrUnknown[V](_)).toList
             val errOrList = ErrOr.traverse(errOrs).map(NameList(_))
             SSH.pure(errOrList)
         })
 
-    inline def parseOrUnknown[V<:Enum](name:String)(using sup:EnumSupport[V], ct:ClassTag[V]):ErrOr[V] =
+    inline def parseOrUnknown[V<:SSHEnum](name:String)(using sup:EnumSupport[V], ct:ClassTag[V]):ErrOr[V] =
         sup.fromName.get(name).orElse{
             sup.byName("Unknown", Tuple1(name))
         }.toRight{
             Err.Unk(ct.runtimeClass.toString, "Unknown")
         }
 
-    // inline given sSHMsgReader as SSH[SSHMsg] = bbp =>
+    // inline given sSHMsgReader: SSH[SSHMsg] = bbp =>
     //     // val mirror = summonInline[Mirror.Of[SSHMsg]]
     //     ???
-    
-    trait ByKey[V <: Enum, K: SSH](f:V => K):
+
+    trait ByKey[V <: SSHEnum, K: SSH](f:V => K):
         def values: Array[V] // hack to expose values from Enum companion object
         lazy val byKey = values.map{ x => f(x) -> x }.toMap
 
-        given reader as SSH[V] = for {
+        given reader: SSH[V] = for {
             k <- SSH[K]
             e  = byKey.get(k).toRight(Err.Unk(this.getClass.getSimpleName, k))
             v <- SSH.pure(e)

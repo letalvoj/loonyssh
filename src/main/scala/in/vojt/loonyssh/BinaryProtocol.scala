@@ -28,9 +28,11 @@ trait BinaryProtocol:
     def flush:Unit
     def sn:String
 
-    def getInt:ErrOr[Int] = log("I", unsafeGetInt, identity)
-    def get:ErrOr[Byte]   = log("B", unsafeGet, identity)
-    def getByteArray(n:Int):ErrOr[Array[Byte]] = 
+    def getInt:ErrOr[Int] =
+        log("I", unsafeGetInt, identity)
+    def get:ErrOr[Byte]   =
+        log("B", unsafeGet, identity)
+    def getByteArray(n:Int):ErrOr[Array[Byte]] =
         log("A", unsafeGetByteArray(n), orArr => orArr.map(arr => s"[${arr.map(toChar).mkString.take(130)}...]"))
 
     def putInt(v:Int):ErrOr[Unit] =
@@ -47,7 +49,7 @@ trait BinaryProtocol:
 
     private def log[V,O](tp:String, eventualV: => V, format:ErrOr[V]=>O):ErrOr[V] = 
         val v = ErrOr.catchIO(eventualV)
-        println(s"> $tp $sn->>> ${format(v)}")
+        println(s"< $tp $sn-<<< ${format(v)}")
         return v
 
     private def toChar(i:Byte) = if(i > 32 && i < 127) i.toChar.toString else f"\u${i}%02X"

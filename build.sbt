@@ -1,11 +1,8 @@
 val Org = "in.vojt"
 val ProjectName    = "loonyssh"
-// val PluginName     = ProjectName + "-mirror"
-// val SandboxName    = ProjectName + "-sandbox"
 val ProjectVersion = "0.0.1-SNAPSHOT"
-val ScalaVersion   = "3.0.0-M1"
+val ScalaVersion   = "3.1.0"
 val MajorVersion   = ScalaVersion.split('.').take(2).mkString(".")
-// val ScalaVersion   = dottyLatestNightlyBuild.get
 
 autoCompilerPlugins := true
 
@@ -20,9 +17,9 @@ lazy val `loonyssh` = project
     libraryDependencies ++= List(
       "com.novocode"    % "junit-interface" % "0.11"   % "test",
       "com.jcraft"      % "jsch"            % "0.1.55",
-      "net.i2p.crypto"  % "eddsa"           % "0.3.0" ,
-      "org.apache.sshd" % "sshd-core"       % "2.4.0" ,
-      ("org.typelevel"   %% "cats-core"      % "2.2.0").withDottyCompat(scalaVersion.value) ,
+      "net.i2p.crypto"  % "eddsa"           % "0.3.0",
+      "org.apache.sshd" % "sshd-core"       % "2.4.0",
+      "org.typelevel"   %% "cats-core"      % "2.6.1",
     ) ++ List(
       "org.slf4j"       % "slf4j-jdk14",
       "org.slf4j"       % "slf4j-api",

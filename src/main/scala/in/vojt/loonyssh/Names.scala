@@ -1,8 +1,10 @@
 package in.vojt.loonyssh
 
-import scala.annotation.alpha
+import scala.annotation.targetName
 
-enum DisconnectCode(val code:Int):
+trait SSHEnum
+
+enum DisconnectCode(val code:Int) extends SSHEnum:
     case HostNotAllowedToConnect     extends DisconnectCode(1)
     case ProtocolError               extends DisconnectCode(2)
     case KeyExchangeFailed           extends DisconnectCode(3)
@@ -21,7 +23,7 @@ enum DisconnectCode(val code:Int):
 
 object DisconnectCode extends SSH.ByKey[DisconnectCode, Int](_.code)
 
-enum ChannelOpenFailure(val code:Int):
+enum ChannelOpenFailure(val code:Int) extends SSHEnum:
     case ADMINISTRATIVELY_PROHIBITED extends ChannelOpenFailure(1)
     case CONNECT_FAILED              extends ChannelOpenFailure(2)
     case UNKNOWN_CHANNEL_TYPE        extends ChannelOpenFailure(3)
@@ -29,7 +31,7 @@ enum ChannelOpenFailure(val code:Int):
 
 object ChannelOpenFailure extends SSH.ByKey[ChannelOpenFailure, Int](_.code)
 
-enum PseudoTerminalModes(val code:Int):
+enum PseudoTerminalModes(val code:Int) extends SSHEnum:
     /** Indicates end of options. */
     case TTY_OP_END       extends PseudoTerminalModes(0)
     /** Interrupt character; 255 if none.  Similarly for the other characters.  Not all of these characters are supported on all systems. */
@@ -145,119 +147,119 @@ enum PseudoTerminalModes(val code:Int):
 
 object PseudoTerminalModes extends SSH.ByKey[PseudoTerminalModes, Int](_.code)
 
-enum Service:
-    @alpha("ssh-userauth")
+enum Service extends SSHEnum:
+    @targetName("ssh-userauth")
     case `ssh-userauth`
-    @alpha("ssh-connection")
+    @targetName("ssh-connection")
     case `ssh-connection`
 
-enum AuthenticationMethod:
-    @alpha("publickey")
+enum AuthenticationMethod extends SSHEnum:
+    @targetName("publickey")
     case `publickey`
-    @alpha("password")
+    @targetName("password")
     case `password`
-    @alpha("hostBased")
+    @targetName("hostBased")
     case `hostBased`
-    @alpha("none")
+    @targetName("none")
     case `none`
 
-enum ConnectionProtocolChannelType:
-    @alpha("session")
+enum ConnectionProtocolChannelType extends SSHEnum:
+    @targetName("session")
     case `session`
-    @alpha("x11")
+    @targetName("x11")
     case `x11`
-    @alpha("forwarded-tcpip")
+    @targetName("forwarded-tcpip")
     case `forwarded-tcpip`
-    @alpha("direct-tcpip")
+    @targetName("direct-tcpip")
     case `direct-tcpip`
 
-enum ConnectionProtocolRequestType:
-    @alpha("tcpip-forward")
+enum ConnectionProtocolRequestType extends SSHEnum:
+    @targetName("tcpip-forward")
     case `tcpip-forward`
-    @alpha("cancel-tcpip-forward")
+    @targetName("cancel-tcpip-forward")
     case `cancel-tcpip-forward`
 
-enum ConnectionProtocolChannelRequestName:
-    @alpha("pty-req")
+enum ConnectionProtocolChannelRequestName extends SSHEnum:
+    @targetName("pty-req")
     case `pty-req`
-    @alpha("x11-req")
+    @targetName("x11-req")
     case `x11-req`
-    @alpha("env")
+    @targetName("env")
     case `env`
-    @alpha("shell")
+    @targetName("shell")
     case `shell`
-    @alpha("exec")
+    @targetName("exec")
     case `exec`
-    @alpha("subsystem")
+    @targetName("subsystem")
     case `subsystem`
-    @alpha("window-change")
+    @targetName("window-change")
     case `window-change`
-    @alpha("xon-xoff")
+    @targetName("xon-xoff")
     case `xon-xoff`
-    @alpha("signal")
+    @targetName("signal")
     case `signal`
-    @alpha("exit-status")
+    @targetName("exit-status")
     case `exit-status`
-    @alpha("exit-signal")
+    @targetName("exit-signal")
     case `exit-signal`
 
-enum SignalName:
-    @alpha("ABRT")
+enum SignalName extends SSHEnum:
+    @targetName("ABRT")
     case `ABRT`
-    @alpha("ALRM")
+    @targetName("ALRM")
     case `ALRM`
-    @alpha("FPE")
+    @targetName("FPE")
     case `FPE`
-    @alpha("HUP")
+    @targetName("HUP")
     case `HUP`
-    @alpha("ILL")
+    @targetName("ILL")
     case `ILL`
-    @alpha("INT")
+    @targetName("INT")
     case `INT`
-    @alpha("KILL")
+    @targetName("KILL")
     case `KILL`
-    @alpha("PIPE")
+    @targetName("PIPE")
     case `PIPE`
-    @alpha("QUIT")
+    @targetName("QUIT")
     case `QUIT`
-    @alpha("SEGV")
+    @targetName("SEGV")
     case `SEGV`
-    @alpha("TERM")
+    @targetName("TERM")
     case `TERM`
-    @alpha("USR1")
+    @targetName("USR1")
     case `USR1`
-    @alpha("USR2")
+    @targetName("USR2")
     case `USR2`
 
-enum KeyExchangeMethod:
-    @alpha("ecdh-sha2-nistp256")
+enum KeyExchangeMethod extends SSHEnum:
+    @targetName("ecdh-sha2-nistp256")
     case `ecdh-sha2-nistp256`
     case Unknown(value:String)
 
-enum EncryptionAlgorithm:
-    @alpha("aes128-ctr")
+enum EncryptionAlgorithm extends SSHEnum:
+    @targetName("aes128-ctr")
     case `aes128-ctr`
-    @alpha("none")
+    @targetName("none")
     case `none`
     case Unknown(value:String)
 
-enum MACAlgorithm:
-    @alpha("hmac-sha1")
+enum MACAlgorithm extends SSHEnum:
+    @targetName("hmac-sha1")
     case `hmac-sha1`
-    @alpha("hmac-sha2-256")
+    @targetName("hmac-sha2-256")
     case `hmac-sha2-256`
-    @alpha("none")
+    @targetName("none")
     case `none`
     case Unknown(value:String)
 
-enum PublicKeyAlgorithm:
-    @alpha("ssh-rsa") 
+enum PublicKeyAlgorithm extends SSHEnum:
+    @targetName("ssh-rsa")
     case `ssh-rsa`
-    @alpha("ssh-ed25519") 
+    @targetName("ssh-ed25519")
     case `ssh-ed25519`
     case Unknown(value:String)
 
-enum CompressionAlgorithm:
+enum CompressionAlgorithm extends SSHEnum:
     case zlib
     case none
     case Unknown(value:String)
