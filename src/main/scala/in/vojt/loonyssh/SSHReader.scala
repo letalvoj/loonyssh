@@ -33,9 +33,11 @@ object SSHReader:
 
     inline def pure[S](eos: ErrOr[S]): SSHReader[S] = t => eos
 
-    def fromBinaryProtocol[S: SSHReader]: SSHReader[(S, Transport.BinaryPacket)] = bb =>
+    inline def fromBinaryProtocol[S <: SSHMsg[?]: SSHReader]: SSHReader[(S, Transport.BinaryPacket)] = bb =>
         for {
             bp <- SSHReader[Transport.BinaryPacket].read(bb)
+            magic = SSHMsg.magic[S]
+            _ <- Right(bp.magic).filterOrElse(_ == magic, Err.Magic(magic, bp.magic))
             bbp = BinaryProtocol(
                 ByteBuffer.wrap(bp.payload),
                 ByteBuffer.allocate(0)
@@ -73,13 +75,16 @@ object SSHReader:
 
     given SSHReader[Byte] = bb => bb.get
 
-    inline def arrayReader(n: Int): SSHReader[Array[Byte]] =
-        bb => bb.getByteArray(n)
+    inline def arrayReader(n: Int): SSHReader[Array[Byte]] = _.getByteArray(n)
 
-    given SSHReader[String] = for {
+    given SSHReader[Array[Byte]] = for {
         n <- SSHReader[Int]
         a <- arrayReader(n)
-    } yield new String(a)
+    } yield a
+
+    given SSHReader[Seq[Byte]] = SSHReader[Array[Byte]].map(_.toSeq)
+
+    given SSHReader[String] = SSHReader[Array[Byte]].map(arr => new String(arr))
 
     given SSHReader[Transport.BinaryPacket] = for {
         lm <- SSHReader[Int] // how to convert BB to IS reader
@@ -92,13 +97,13 @@ object SSHReader:
 
     given SSHReader[NameList[String]] = SSHReader[String].map(s => NameList(s.split(",").toList))
 
-    inline given lseqReader[L <: Int, T: ClassTag : SSHReader]: SSHReader[LSeq[L, T]] = br =>
+    inline given FixedSizeListReader[L <: Int, T: ClassTag : SSHReader]: SSHReader[FixedSizeList[L, T]] = br =>
         val len = constValue[L]
         val list = List.fill(len)(SSHReader[T].read(br))
         for
             l <- ErrOr.traverse(list)
         yield
-            LSeq[L, T](l)
+            FixedSizeList[L, T](l)
 
     inline given productReader[V <: Product : ClassTag](using m: Mirror.ProductOf[V]): SSHReader[V] = br => {
         val p = readProduct[m.MirroredElemTypes](br)(0)

@@ -1,0 +1,35 @@
+name: loonyssh
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - bcrypt=3.2.0=py39h89e85a6_1
+  - ca-certificates=2021.10.8=h033912b_0
+  - certifi=2021.10.8=py39h6e9494a_0
+  - cffi=1.14.6=py39hb71fe58_0
+  - cryptography=35.0.0=py39h209aa08_1
+  - decorator=5.1.0=pyhd8ed1ab_0
+  - krb5=1.19.2=hcfbf3a7_2
+  - libcxx=12.0.0=h2f01273_0
+  - libedit=3.1.20191231=h0678c8f_2
+  - libffi=3.3=hb1e8313_2
+  - libsodium=1.0.18=hbcb3906_1
+  - ncurses=6.2=h0a44026_1
+  - openssl=1.1.1l=h0d85af4_0
+  - paramiko=2.8.0=pyhd8ed1ab_0
+  - pip=21.2.4=py39hecd8cb5_0
+  - pycparser=2.20=pyh9f0ad1d_2
+  - pynacl=1.4.0=py39h89e85a6_2
+  - python=3.9.7=h88f2d9e_1
+  - python-gssapi=1.7.2=py39hb6f4df7_0
+  - python_abi=3.9=2_cp39
+  - readline=8.1=h9ed2024_0
+  - setuptools=58.0.4=py39hecd8cb5_0
+  - six=1.16.0=pyh6c4a22f_0
+  - sqlite=3.36.0=hce871da_0
+  - tk=8.6.11=h7bc2e8c_0
+  - tzdata=2021e=hda174b7_0
+  - wheel=0.37.0=pyhd3eb1b0_1
+  - xz=5.2.5=h1de35cc_0
+  - zlib=1.2.11=h1de35cc_3
+

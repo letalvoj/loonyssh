@@ -22,14 +22,15 @@ object SSHWriter:
 
     inline def apply[V](using impl: SSHWriter[V]): SSHWriter[V] = impl
 
-    def overBinaryProtocol[V <: SSHMsg : SSHWriter](v: V)(using ctx: SSHContext): SSHReader[Unit] = iop =>
+    def overBinaryProtocol[V <: SSHMsg[?] : SSHWriter](v: V)(using ctx: SSHContext): SSHReader[Transport.BinaryPacket] = iop =>
         val bbp = BinaryProtocol(ByteBuffer.allocate(0), ByteBuffer.allocate(65536))
         for
             _ <- SSHWriter[V].write(v, bbp)
             data = bbp.bbo.array.take(bbp.bbo.position)
-            _ <- SSHWriter[Transport.BinaryPacket].write(Transport(v.magic, data), iop)
+            bp = Transport(v.magic.toByte, data)
+            _ <- SSHWriter[Transport.BinaryPacket].write(bp, iop)
             _ <- ErrOr.catchIO(iop.flush)
-        yield ()
+        yield (bp)
 
     def plain[V: SSHWriter](v: V): SSHReader[Unit] = iop =>
         for
@@ -42,6 +43,7 @@ object SSHWriter:
     given byteWriter: SSHWriter[Byte] = (b, bp) => bp.put(b)
 
     given arrayWriter: SSHWriter[Array[Byte]] = (b, bp) => bp.putByteArray(b)
+    given seqWriter: SSHWriter[Seq[Byte]] = (b, bp) => bp.putByteArray(b.toArray)
 
     given seqWriter[V: SSHWriter]: SSHWriter[Seq[V]] = (s, bp) =>
         ErrOr.traverse(s.map(v => SSHWriter[V].write(v, bp)).toList).map(_ => ())
@@ -55,7 +57,7 @@ object SSHWriter:
         println(s"> I --->>> $iden")
         SSHWriter[Array[Byte]].write(iden.version.getBytes, bp)
 
-    inline given knownLengthSeqWriter[L <: Int, T](using wr: SSHWriter[Seq[T]]): SSHWriter[LSeq[L, T]] = (ls, bp) => wr.write(ls.toSeq, bp)
+    inline given knownLengthSeqWriter[L <: Int, T](using wr: SSHWriter[Seq[T]]): SSHWriter[FixedSizeList[L, T]] = (ls, bp) => wr.write(ls.toSeq, bp)
 
     inline given productWriter[V: ClassTag](using mv: Mirror.ProductOf[V]): SSHWriter[V] = (p: V, bp) => {
         println(s"> P --->>> $p (${p.getClass})")
@@ -68,7 +70,7 @@ object SSHWriter:
     }
 
     inline given enumListWriter[V <: SSHEnum : ClassTag](using w: EnumSupport[V]): SSHWriter[NameList[V]] = SSHWriter[String].coMap {
-        es => es.names.map(w.toName).mkString(",")
+        es => es.map(w.toName).mkString(",")
     }
 
     inline private def writeProduct[T](p: Product)(bp: BinaryProtocol)(i: Int): ErrOr[Unit] = inline erasedValue[T] match
@@ -88,6 +90,6 @@ object SSHWriter:
         case _ => Right(())
 
     inline private def nameList[V: ClassTag](toString: V => String): SSHWriter[NameList[V]] = (nl, bp) =>
-        SSHWriter[String].write(nl.names.map(toString).mkString(","), bp)
+        SSHWriter[String].write(nl.map(toString).mkString(","), bp)
 
     given nameListWriter: SSHWriter[NameList[String]] = nameList(identity)

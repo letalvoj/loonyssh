@@ -3,7 +3,6 @@ package in.vojt.loonyssh
 import scala.compiletime.*
 import java.io.*
 import scala.reflect.ClassTag
-import scala.collection.immutable.ArraySeq
 
 /**
  * A string containing a comma-separated list of names.  A name-list
@@ -13,15 +12,16 @@ import scala.collection.immutable.ArraySeq
  * contain a comma (",").  As this is a list of names, all of the
  * elements contained are names and MUST be in US-ASCII.
  */
-case class NameList[V](names: List[V])
-
+opaque type NameList[V] <: Seq[V] = Seq[V]
 object NameList:
-    inline def fromArr[B](values: Array[B]): NameList[B] = NameList(values.toList)
+    inline def apply[V](values: Seq[V]): NameList[V] = values
 
-opaque type LSeq[L <: Int, V] = Seq[V]
-object LSeq:
-    def apply[L <: Int, V](seq: Seq[V]): LSeq[L, V] = seq
+opaque type FixedSizeList[L <: Int, V] = Seq[V]
+object FixedSizeList:
+    inline def apply[L <: Int, V](seq: Seq[V]): FixedSizeList[L, V] =
+        assert(seq.length == constValue[L])
+        seq
 
-    extension[L <: Int, V] (ls: LSeq[L, V]) {
+    extension[L <: Int, V] (ls: FixedSizeList[L, V]) {
         def toSeq: Seq[V] = ls
     }
