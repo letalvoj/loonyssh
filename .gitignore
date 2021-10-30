@@ -1,9 +1,13 @@
+.bloop
+.idea
+.metals
+.vscode
+
 target/
-.idea/
+
 *.log
 .dotty*
 
 parsed
 
-.bloop
 _site/

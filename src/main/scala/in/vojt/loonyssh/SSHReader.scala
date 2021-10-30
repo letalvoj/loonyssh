@@ -33,9 +33,9 @@ object SSHReader:
 
     inline def pure[S](eos: ErrOr[S]): SSHReader[S] = t => eos
 
-    inline def fromBinaryProtocol[S <: SSHMsg[?]: SSHReader]: SSHReader[(S, Transport.BinaryPacket)] = bb =>
+    inline def fromBinaryProtocol[S <: SSHMsg[?] : SSHReader](mac: Boolean): SSHReader[(S, Transport.BinaryPacket)] = bb =>
         for {
-            bp <- SSHReader[Transport.BinaryPacket].read(bb)
+            bp <- transportReader(mac).read(bb)
             magic = SSHMsg.magic[S]
             _ <- Right(bp.magic).filterOrElse(_ == magic, Err.Magic(magic, bp.magic))
             bbp = BinaryProtocol(
@@ -86,13 +86,14 @@ object SSHReader:
 
     given SSHReader[String] = SSHReader[Array[Byte]].map(arr => new String(arr))
 
-    given SSHReader[Transport.BinaryPacket] = for {
+    // this might not be a `SSHReader` ... these two abstractions should get separated ...
+    def transportReader(mac: Boolean): SSHReader[Transport.BinaryPacket] = for {
         lm <- SSHReader[Int] // how to convert BB to IS reader
         lp <- SSHReader[Byte]
         magic <- SSHReader[Byte]
         payload <- arrayReader(lm - lp - 2)
         padding <- arrayReader(lp)
-        mac <- arrayReader(0)
+        mac <- if (mac) SSHReader[Array[Byte]] else arrayReader(0)
     } yield new Transport.BinaryPacket(lm, lp, magic, payload, padding, mac)
 
     given SSHReader[NameList[String]] = SSHReader[String].map(s => NameList(s.split(",").toList))

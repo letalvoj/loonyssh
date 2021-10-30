@@ -1,13 +1,14 @@
 package in.vojt.loonyssh
 
-import scala.compiletime.{constValue,erasedValue}
+import scala.compiletime.constValue
+import scala.compiletime.erasedValue
 
 trait SSHMsg[M <: Int](val magic: M)
 
 object SSHMsg:
 
     inline def magic[S <: SSHMsg[?]]: Int = inline erasedValue[S] match {
-        case _:SSHMsg[t] => constValue[t]
+        case _: SSHMsg[t] => constValue[t]
         case _ => -1
     }
 
@@ -125,38 +126,36 @@ object SSHMsg:
     case object NewKeys extends SSHMsg[Magic.NewKeys](constValue)
 
     /**
-     The client sends:
+     * The client sends:
+     *
+     * byte     SSH_MSG_KEX_ECDH_INIT
+     * string   Q_C, client's ephemeral public key octet string
+     */
+    case class KexECDHInit(Q_C: Seq[Byte]) extends SSHMsg[Magic.KexECDHInit](constValue)
 
-        byte     SSH_MSG_KEX_ECDH_INIT
-        string   Q_C, client's ephemeral public key octet string
-    */
-    case class KexECDHInit(`Q_C`: Seq[Byte]) extends SSHMsg[Magic.KexECDHInit](constValue)
-    
     /**
-     The server responds with:
-
-        byte     SSH_MSG_KEX_ECDH_REPLY
-        string   K_S, server's public host key
-        string   Q_S, server's ephemeral public key octet string
-        string   the signature on the exchange hash
-            
-    The exchange hash H is computed as the hash of the concatenation of
-    the following.
-
-        string   V_C, client's identification string (CR and LF excluded)
-        string   V_S, server's identification string (CR and LF excluded)
-        string   I_C, payload of the client's SSH_MSG_KEXINIT
-        string   I_S, payload of the server's SSH_MSG_KEXINIT
-        string   K_S, server's public host key
-        string   Q_C, client's ephemeral public key octet string
-        string   Q_S, server's ephemeral public key octet string
-        mpint    K,   shared secret
-    */
-    case class KexECDHReply(
-        `K_S`: Seq[Byte],
-        `Q_S`: Seq[Byte],
-        `signature`: Seq[Byte]
-    ) extends SSHMsg[Magic.KexECDHReply](constValue)
+     * The server responds with:
+     *
+     * byte     SSH_MSG_KEX_ECDH_REPLY
+     * string   K_S, server's public host key
+     * string   Q_S, server's ephemeral public key octet string
+     * string   the signature on the exchange hash
+     *
+     * The exchange hash H is computed as the hash of the concatenation of
+     * the following.
+     *
+     * string   V_C, client's identification string (CR and LF excluded)
+     * string   V_S, server's identification string (CR and LF excluded)
+     * string   I_C, payload of the client's SSH_MSG_KEXINIT
+     * string   I_S, payload of the server's SSH_MSG_KEXINIT
+     * string   K_S, server's public host key
+     * string   Q_C, client's ephemeral public key octet string
+     * string   Q_S, server's ephemeral public key octet string
+     * mpint    K,   shared secret
+     */
+    case class KexECDHReply(K_S: Seq[Byte],
+                            Q_S: Seq[Byte],
+                            signature: Seq[Byte]) extends SSHMsg[Magic.KexECDHReply](constValue)
 
 
 /**
@@ -174,13 +173,12 @@ enum Transport:
      * byte[m]   mac (Message Authentication Code - MAC); m = mac_length
      * oboslete
      */
-    case BinaryPacket(
-                       len: Int,
-                       pad: Byte,
-                       magic: Byte,
-                       payload: Array[Byte],
-                       padding: Array[Byte],
-                       mac: Array[Byte])
+    case BinaryPacket(len: Int,
+                      pad: Byte,
+                      magic: Byte,
+                      payload: Array[Byte],
+                      padding: Array[Byte],
+                      mac: Array[Byte])
 
 object Transport:
     def apply(magic: Byte, data: Array[Byte])(using ctx: SSHContext): Transport.BinaryPacket =
@@ -195,6 +193,7 @@ object Transport:
                 minPadding
 
         println(s"> BP --->>> ${4} ${1} ${data.length} ${padding}")
+        println(s"> BP --->>> ${padding} ${magic} ${data.toSeq}")
 
         new Transport.BinaryPacket(
             length + padding - 4,

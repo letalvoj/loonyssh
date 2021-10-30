@@ -42,8 +42,12 @@ object SSHWriter:
 
     given byteWriter: SSHWriter[Byte] = (b, bp) => bp.put(b)
 
-    given arrayWriter: SSHWriter[Array[Byte]] = (b, bp) => bp.putByteArray(b)
-    given seqWriter: SSHWriter[Seq[Byte]] = (b, bp) => bp.putByteArray(b.toArray)
+    given arrayWriter: SSHWriter[Array[Byte]] = (b, bp) =>
+        bp.putByteArray(b)
+
+    given seqWriter: SSHWriter[Seq[Byte]] = (b, bp) =>
+        bp.putInt(b.length)
+        bp.putByteArray(b.toArray)
 
     given seqWriter[V: SSHWriter]: SSHWriter[Seq[V]] = (s, bp) =>
         ErrOr.traverse(s.map(v => SSHWriter[V].write(v, bp)).toList).map(_ => ())

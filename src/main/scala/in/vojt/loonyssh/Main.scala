@@ -36,33 +36,37 @@ val sshProtocol = for
     _ <- SSHWriter.plain(new Transport.Identification(IdentificationString))
     sIs <- SSHReader[Transport.Identification]
     bpKexClient <- SSHWriter.overBinaryProtocol(kexClient())
-    kexTuple <- SSHReader.fromBinaryProtocol[SSHMsg.KexInit]
+    kexTuple <- SSHReader.fromBinaryProtocol[SSHMsg.KexInit](mac = false)
     (kexServer, bpKexServer) = kexTuple
     _ = println(kexServer)
     // TODO negotiate intead of assuming XDH / X25519
     _ <- {
-        // https://github.com/the-michael-toy/jsch/blob/f9003ea83d5452d8c5e4ef8da59064195a209a05/src/main/java/com/jcraft/jsch/DHECN.java
         // https://datatracker.ietf.org/doc/html/rfc5656#section-4
-        
-        import java.security.{KeyPairGenerator, spec, interfaces, KeyPair}
-        val kpg: KeyPairGenerator = KeyPairGenerator.getInstance("XDH")
-        val paramSpec: spec.NamedParameterSpec = new spec.NamedParameterSpec("X25519")
-        kpg.initialize(paramSpec);
-        // val kpg = KeyPairGenerator.getInstance("X25519") // alternatively
-        val kp: KeyPair = kpg.generateKeyPair();
-        val pub: interfaces.XECPublicKey = kp.getPublic.asInstanceOf
 
-        SSHWriter.overBinaryProtocol(SSHMsg.KexECDHInit(pub.getEncoded))
+        import com.jcraft.jsch.jce.ECDHN
+        import com.jcraft.jsch.jce.SHA256
+        import com.jcraft.jsch.DHEC256
+
+        val sha256 = new SHA256()
+        val ecdh = new ECDHN()
+        sha256.init()
+        ecdh.init(256)
+
+        SSHWriter.overBinaryProtocol(SSHMsg.KexECDHInit(ecdh.getQ))
     }
-    _ <- SSHReader.fromBinaryProtocol[SSHMsg.KexECDHReply]
-    // _ <- SSHWriter.overBinaryProtocol(SSHMsg.NewKeys)
+    ecdhReplyTuple <- SSHReader.fromBinaryProtocol[SSHMsg.KexECDHReply](mac = true)
+    (ecdhReply, ecdhBp) = ecdhReplyTuple
+    _ <- {
+        // https://github.com/the-michael-toy/jsch/blob/f9003ea83d5452d8c5e4ef8da59064195a209a05/src/main/java/com/jcraft/jsch/DHECN.java#L125-L181
+        SSHWriter.overBinaryProtocol(SSHMsg.NewKeys)
+    }
 yield
-    (sIs, kexServer)
+    ecdhReply
 
-def negotiate(server:SSHMsg.KexInit, client:SSHMsg.KexInit):SSHMsg.KexInit = 
+def negotiate(server: SSHMsg.KexInit, client: SSHMsg.KexInit): SSHMsg.KexInit =
     val kexAlgorithm = client.kexAlgorithms.find(client.kexAlgorithms.contains)
     ???
-    
+
 
 def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
     val errOrRes = sshProtocol.read(BinaryProtocol(bis, bos))
@@ -83,7 +87,7 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
       take(30).
       foreach(print)
 
-    println("Finished!")    
+    println("Finished!")
 
 
 @main def Main(): Unit =
