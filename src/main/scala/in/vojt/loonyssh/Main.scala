@@ -36,8 +36,7 @@ val sshProtocol = for
     _ <- SSHWriter.plain(new Transport.Identification(IdentificationString))
     sIs <- SSHReader[Transport.Identification]
     bpKexClient <- SSHWriter.overBinaryProtocol(kexClient())
-    kexTuple <- SSHReader.fromBinaryProtocol[SSHMsg.KexInit](mac = false)
-    (kexServer, bpKexServer) = kexTuple
+    (kexServer, bpKexServer) <- SSHReader.fromBinaryProtocol[SSHMsg.KexInit](mac = false)
     _ = println(kexServer)
     // TODO negotiate intead of assuming XDH / X25519
     _ <- {
@@ -54,8 +53,7 @@ val sshProtocol = for
 
         SSHWriter.overBinaryProtocol(SSHMsg.KexECDHInit(ecdh.getQ))
     }
-    ecdhReplyTuple <- SSHReader.fromBinaryProtocol[SSHMsg.KexECDHReply](mac = true)
-    (ecdhReply, ecdhBp) = ecdhReplyTuple
+    (ecdhReply, ecdhBp) <- SSHReader.fromBinaryProtocol[SSHMsg.KexECDHReply](mac = true)
     _ <- {
         // https://github.com/the-michael-toy/jsch/blob/f9003ea83d5452d8c5e4ef8da59064195a209a05/src/main/java/com/jcraft/jsch/DHECN.java#L125-L181
         SSHWriter.overBinaryProtocol(SSHMsg.NewKeys)

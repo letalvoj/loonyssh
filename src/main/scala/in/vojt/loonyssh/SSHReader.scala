@@ -19,13 +19,14 @@ trait SSHReader[S]:
     def read(t: BinaryProtocol): ErrOr[S]
 
     // cats &| other FP lib
-    def map[W](f: S => W): SSHReader[W] = new SSHReader[W] :
-        def read(t: BinaryProtocol): ErrOr[W] =
-            SSHReader.this.read(t).map(f)
+    def map[W](f: S => W): SSHReader[W] =
+        bp => SSHReader.this.read(bp).map(f)
 
-    def flatMap[W](f: S => SSHReader[W]): SSHReader[W] = new SSHReader[W] :
-        def read(t: BinaryProtocol): ErrOr[W] =
-            SSHReader.this.read(t).map(f).flatMap(r => r.read(t))
+    def flatMap[W](f: S => SSHReader[W]): SSHReader[W] =
+        bp => SSHReader.this.read(bp).map(f).flatMap(r => r.read(bp))
+
+    def withFilter(f: S => Boolean): SSHReader[S] =
+        bp => SSHReader.this.read(bp).filterOrElse(f, Err.FailedPattern)
 
 object SSHReader:
 
