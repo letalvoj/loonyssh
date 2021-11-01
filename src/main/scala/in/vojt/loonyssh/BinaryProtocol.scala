@@ -66,7 +66,7 @@ object BinaryProtocol:
     def apply(is: InputStream, os: OutputStream) =
         InputStreamBinaryProtocol(is, os)
 
-    def apply(bbi: ByteBuffer, bbo: ByteBuffer) =
+    def apply(bbi: ByteBuffer = ByteBuffer.allocate(0), bbo: ByteBuffer = ByteBuffer.allocate(0)) =
         ByteBufferBinaryProtocol(bbi, bbo)
 
 case class InputStreamBinaryProtocol(is: InputStream, os: OutputStream) extends BinaryProtocol :

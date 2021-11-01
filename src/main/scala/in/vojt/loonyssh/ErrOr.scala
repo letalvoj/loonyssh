@@ -13,6 +13,7 @@ enum Err:
     case Unk[K](expl: String, k: K)
     case Oth[K](expl: String)
     case Magic(exp: Int, act: Int)
+    case FailedPattern
 
 type ErrOr[V] = Either[Err, V]
 

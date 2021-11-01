@@ -30,13 +30,13 @@ object SSHWriter:
             bp = Transport(v.magic.toByte, data)
             _ <- SSHWriter[Transport.BinaryPacket].write(bp, iop)
             _ <- ErrOr.catchIO(iop.flush)
-        yield (bp)
+        yield bp
 
-    def plain[V: SSHWriter](v: V): SSHReader[Unit] = iop =>
+    def plain[V: SSHWriter](v: V): SSHReader[V] = iop =>
         for
             _ <- SSHWriter[V].write(v, iop)
             _ <- ErrOr.catchIO(iop.flush)
-        yield ()
+        yield v
 
     given intWriter: SSHWriter[Int] = (i, bp) => bp.putInt(i)
 

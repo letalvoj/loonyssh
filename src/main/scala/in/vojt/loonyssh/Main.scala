@@ -1,5 +1,10 @@
 package in.vojt.loonyssh
 
+import com.jcraft.jsch.jce.SHA256
+import com.jcraft.jsch.Buffer
+import com.jcraft.jsch.Exposed
+
+import java.awt.Font
 import java.net.*
 import java.io.*
 import scala.io.Source
@@ -9,6 +14,11 @@ import scala.compiletime.*
 import scala.reflect.ClassTag
 import java.util.Random
 // import scala.deriving.constValue
+import com.jcraft.jsch.jce.ECDHN
+import com.jcraft.jsch.DHEC256
+import com.jcraft.jsch.DHECN
+import com.jcraft.jsch.jce.SHA256
+import com.jcraft.jsch.jce.SignatureRSA
 
 val ClientName = "LoonySSH"
 val ClientVersion = "0.0.1"
@@ -32,30 +42,80 @@ def kexClient() = SSHMsg.KexInit(
 
 implicit val ctx: SSHContext = SSHContext()
 
-val sshProtocol = for
-    _ <- SSHWriter.plain(new Transport.Identification(IdentificationString))
-    sIs <- SSHReader[Transport.Identification]
+def verify(H: Array[Byte], sig_of_H: Array[Byte]): SSHReader[Boolean] = for
+    alg <- SSHReader[String]
+    _ = assert(alg == "ssh-rsa")
+    ee <- SSHReader[Array[Byte]]
+    n <- SSHReader[Array[Byte]]
+yield {
+    val sig = new SignatureRSA()
+    sig.init()
+    sig.setPubKey(ee, n)
+    sig.update(H)
+    sig.verify(sig_of_H)
+}
+
+
+val sshProtocol: SSHReader[SSHMsg.KexECDHReply] = for
+    vC <- SSHWriter.plain(new Transport.Identification(IdentificationString))
+    vS <- SSHReader[Transport.Identification]
     bpKexClient <- SSHWriter.overBinaryProtocol(kexClient())
     (kexServer, bpKexServer) <- SSHReader.fromBinaryProtocol[SSHMsg.KexInit](mac = false)
-    _ = println(kexServer)
     // TODO negotiate intead of assuming XDH / X25519
-    _ <- {
+    (ecdh: ECDHN, qC: Array[Byte]) <- {
         // https://datatracker.ietf.org/doc/html/rfc5656#section-4
 
-        import com.jcraft.jsch.jce.ECDHN
-        import com.jcraft.jsch.jce.SHA256
-        import com.jcraft.jsch.DHEC256
-
-        val sha256 = new SHA256()
         val ecdh = new ECDHN()
-        sha256.init()
         ecdh.init(256)
+        val qC = ecdh.getQ
 
-        SSHWriter.overBinaryProtocol(SSHMsg.KexECDHInit(ecdh.getQ))
+        SSHWriter.
+          overBinaryProtocol(SSHMsg.KexECDHInit(qC)).
+          map(_ => (ecdh, qC))
     }
     (ecdhReply, ecdhBp) <- SSHReader.fromBinaryProtocol[SSHMsg.KexECDHReply](mac = true)
     _ <- {
         // https://github.com/the-michael-toy/jsch/blob/f9003ea83d5452d8c5e4ef8da59064195a209a05/src/main/java/com/jcraft/jsch/DHECN.java#L125-L181
+        val kS = ecdhReply.K_S
+        val qS = ecdhReply.Q_S
+
+        val rs = Exposed.fromPoint(qS)
+        assert(ecdh.validate(rs(0), rs(1)))
+
+        // DHECN.normalize
+        // what the hell is the initial 0?
+        val K = ecdh.getSecret(rs(0), rs(1))
+        val sigofH = ecdhReply.signature
+        val sha256 = new SHA256()
+        sha256.init()
+
+        // string   V_C, client's identification string (CR and LF excluded)
+        // string   V_S, server's identification string (CR and LF excluded)
+        // string   I_C, payload of the client's SSH_MSG_KEXINIT
+        // string   I_S, payload of the server's SSH_MSG_KEXINIT
+        // string   K_S, server's public host key
+        // string   Q_C, client's ephemeral public key octet string
+        // string   Q_S, server's ephemeral public key octet string
+        // mpint    K__,   shared secret
+
+        val buf = new Buffer()
+        buf.putString(vC.version.trim.getBytes)
+        buf.putString(vS.version.trim.getBytes)
+        buf.putString(Array(bpKexClient.magic) ++ bpKexClient.payload)
+        buf.putString(Array(bpKexServer.magic) ++ bpKexServer.payload)
+        buf.putString(kS)
+        buf.putString(qC)
+        buf.putString(qS)
+        buf.putMPInt(K)
+        val foo = new Array[Byte](buf.getLength)
+        buf.getByte(foo)
+        sha256.update(foo, 0, foo.length)
+        val H = sha256.digest
+
+        verify(H, sigofH).read(BinaryProtocol(ByteBuffer.wrap(kS))) match {
+            case Right(true) =>
+            case _ => throw RuntimeException("Failed to verify kex")
+        }
         SSHWriter.overBinaryProtocol(SSHMsg.NewKeys)
     }
 yield
