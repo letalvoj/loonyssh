@@ -25,3 +25,7 @@ object FixedSizeList:
     extension[L <: Int, V] (ls: FixedSizeList[L, V]) {
         def toSeq: Seq[V] = ls
     }
+
+opaque type MPInt <: Array[Byte] = Array[Byte]
+object MPInt:
+    inline def apply(arr: Array[Byte]): MPInt = arr

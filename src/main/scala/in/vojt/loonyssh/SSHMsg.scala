@@ -153,8 +153,8 @@ object SSHMsg:
      * string   Q_S, server's ephemeral public key octet string
      * mpint    K,   shared secret
      */
-    case class KexECDHReply(K_S: Array[Byte],
-                            Q_S: Array[Byte],
+    case class KexECDHReply(kS: Array[Byte],
+                            qS: Array[Byte],
                             signature: Array[Byte]) extends SSHMsg[Magic.KexECDHReply](constValue)
 
 

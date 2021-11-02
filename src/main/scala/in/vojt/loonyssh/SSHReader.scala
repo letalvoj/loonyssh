@@ -16,6 +16,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
 trait SSHReader[S]:
+    
     def read(t: BinaryProtocol): ErrOr[S]
 
     // cats &| other FP lib
@@ -28,11 +29,14 @@ trait SSHReader[S]:
     def withFilter(f: S => Boolean): SSHReader[S] =
         bp => SSHReader.this.read(bp).filterOrElse(f, Err.FailedPattern)
 
+    def write(value: S)(using w: SSHWriter[S]): SSHReader[S] =
+        bp => w.write(bp, value).map(_ => value)
+
 object SSHReader:
 
     inline def apply[S](using impl: SSHReader[S]): SSHReader[S] = impl
 
-    inline def pure[S](eos: ErrOr[S]): SSHReader[S] = t => eos
+    inline def pure[S](eos: ErrOr[S]): SSHReader[S] = _ => eos
 
     inline def fromBinaryProtocol[S <: SSHMsg[?] : SSHReader](mac: Boolean): SSHReader[(S, Transport.BinaryPacket)] = bb =>
         for {

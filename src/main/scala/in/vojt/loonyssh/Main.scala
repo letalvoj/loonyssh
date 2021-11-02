@@ -55,6 +55,7 @@ yield {
     sig.verify(sig_of_H)
 }
 
+// replace as much jsch logic as possible with the JVM builtin cypher stuff
 
 val sshProtocol: SSHReader[SSHMsg.KexECDHReply] = for
     vC <- SSHWriter.plain(new Transport.Identification(IdentificationString))
@@ -75,11 +76,7 @@ val sshProtocol: SSHReader[SSHMsg.KexECDHReply] = for
     }
     (ecdhReply, ecdhBp) <- SSHReader.fromBinaryProtocol[SSHMsg.KexECDHReply](mac = true)
     _ <- {
-        // https://github.com/the-michael-toy/jsch/blob/f9003ea83d5452d8c5e4ef8da59064195a209a05/src/main/java/com/jcraft/jsch/DHECN.java#L125-L181
-        val kS = ecdhReply.K_S
-        val qS = ecdhReply.Q_S
-
-        val rs = Exposed.fromPoint(qS)
+        val rs = Exposed.fromPoint(ecdhReply.qS)
         assert(ecdh.validate(rs(0), rs(1)))
 
         // DHECN.normalize
@@ -89,35 +86,27 @@ val sshProtocol: SSHReader[SSHMsg.KexECDHReply] = for
         val sha256 = new SHA256()
         sha256.init()
 
-        // string   V_C, client's identification string (CR and LF excluded)
-        // string   V_S, server's identification string (CR and LF excluded)
-        // string   I_C, payload of the client's SSH_MSG_KEXINIT
-        // string   I_S, payload of the server's SSH_MSG_KEXINIT
-        // string   K_S, server's public host key
-        // string   Q_C, client's ephemeral public key octet string
-        // string   Q_S, server's ephemeral public key octet string
-        // mpint    K__,   shared secret
-
         val buf = new Buffer()
-        buf.putString(vC.version.trim.getBytes)
-        buf.putString(vS.version.trim.getBytes)
-        buf.putString(Array(bpKexClient.magic) ++ bpKexClient.payload)
-        buf.putString(Array(bpKexServer.magic) ++ bpKexServer.payload)
-        buf.putString(kS)
-        buf.putString(qC)
-        buf.putString(qS)
-        buf.putMPInt(K)
+        buf.putString(vC.version.trim.getBytes) // string   V_C, client's identification string (CR and LF excluded)
+        buf.putString(vS.version.trim.getBytes) // string   V_S, server's identification string (CR and LF excluded)
+        buf.putString(Array(bpKexClient.magic) ++ bpKexClient.payload) // string   I_C, payload of the client's SSH_MSG_KEXINIT
+        buf.putString(Array(bpKexServer.magic) ++ bpKexServer.payload) // string   I_S, payload of the server's SSH_MSG_KEXINIT
+        buf.putString(ecdhReply.kS) // string   K_S, server's public host key
+        buf.putString(qC) // string   Q_C, client's ephemeral public key octet string
+        buf.putString(ecdhReply.qS) // string   Q_S, server's ephemeral public key octet string
+        buf.putMPInt(K) // mpint    K__,   shared secret
         val foo = new Array[Byte](buf.getLength)
         buf.getByte(foo)
         sha256.update(foo, 0, foo.length)
         val H = sha256.digest
 
-        verify(H, sigofH).read(BinaryProtocol(ByteBuffer.wrap(kS))) match {
+        verify(H, sigofH).read(BinaryProtocol(ByteBuffer.wrap(ecdhReply.kS))) match {
             case Right(true) =>
             case _ => throw RuntimeException("Failed to verify kex")
         }
         SSHWriter.overBinaryProtocol(SSHMsg.NewKeys)
     }
+    //    _ <- SSHReader.fromBinaryProtocol[SSHMsg.NewKeys.type](mac = false)
 yield
     ecdhReply
 
