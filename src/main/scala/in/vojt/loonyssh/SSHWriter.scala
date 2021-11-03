@@ -1,9 +1,10 @@
 package in.vojt.loonyssh
 
-import com.jcraft.jsch.{Buffer => JSChBuffer}
+import com.jcraft.jsch.Buffer as JSChBuffer
 
 import java.io.*
 import java.nio.ByteBuffer
+import java.util.Locale
 import scala.reflect.ClassTag
 import scala.deriving.*
 import scala.compiletime.*
@@ -23,21 +24,42 @@ object SSHWriter:
 
     inline def apply[V](using impl: SSHWriter[V]): SSHWriter[V] = impl
 
-    def overBinaryProtocol[V <: SSHMsg[?] : SSHWriter](v: V)(using ctx: SSHContext): SSHReader[Transport.BinaryPacket] = iop =>
-        val bbp = BinaryProtocol(ByteBuffer.allocate(0), ByteBuffer.allocate(65536))
+    def transport[V <: SSHMsg[?] : SSHWriter](value: V)(using ctx: SSHContext): ErrOr[Transport.BinaryPacket] =
+        val bp = BinaryProtocol(bbo = ByteBuffer.allocate(65536))
         for
-            _ <- SSHWriter[V].write(bbp, v)
-            data = bbp.bbo.array.take(bbp.bbo.position)
-            bp = Transport(v.magic.toByte, data)
-            _ <- SSHWriter[Transport.BinaryPacket].write(iop, bp)
+            _ <- SSHWriter[V].write(bp, value)
+        yield
+            val magic = value.magic.toByte
+            val data = bp.bbo.array.take(bp.bbo.position)
+            Transport(magic, data)
+
+    def overBinaryProtocolEncrypted[V <: SSHMsg[?] : SSHWriter](value: V)(using ctx: SSHContext): SSHReader[Transport.BinaryPacket] = iop =>
+        for
+            tp <- transport(value)
+            _ <- SSHWriter[Transport.BinaryPacket].write(iop, tp)
             _ <- ErrOr.catchIO(iop.flush)
-        yield bp
+        yield tp
+
+    def overBinaryProtocol[V <: SSHMsg[?] : SSHWriter](value: V)(using ctx: SSHContext): SSHReader[Transport.BinaryPacket] = iop =>
+        for
+            tp <- transport(value)
+            _ <- SSHWriter[Transport.BinaryPacket].write(iop, tp)
+            _ <- ErrOr.catchIO(iop.flush)
+        yield tp
+
+    def send[P : SSHWriter](packet: P): SSHReader[P] = iop =>
+        for
+            _ <- SSHWriter[P].write(iop, packet)
+            _ <- ErrOr.catchIO(iop.flush)
+        yield packet
 
     def plain[V: SSHWriter](v: V): SSHReader[V] = iop =>
         for
             _ <- SSHWriter[V].write(iop, v)
             _ <- ErrOr.catchIO(iop.flush)
         yield v
+
+    given localeWriter: SSHWriter[Locale] = SSHWriter[String].coMap(_.toLanguageTag)
 
     given intWriter: SSHWriter[Int] = _.putInt(_)
 

@@ -135,7 +135,7 @@ if __name__ == '__main__':
                 continue
 
             # wait for auth
-            chan = t.accept(20)
+            chan = t.accept(10)
             if chan is None:
                 print("*** No channel.")
                 continue

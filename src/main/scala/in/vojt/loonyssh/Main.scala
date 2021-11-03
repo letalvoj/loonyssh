@@ -3,12 +3,18 @@ package in.vojt.loonyssh
 import com.jcraft.jsch.jce.SHA256
 import com.jcraft.jsch.Buffer
 import com.jcraft.jsch.Exposed
+import com.jcraft.jsch.jce.AES128CTR
+import com.jcraft.jsch.jce.HMACSHA1
+import com.jcraft.jsch.ExposedBuffer
+import com.jcraft.jsch.HASH
+import com.jcraft.jsch.Util
 
 import java.awt.Font
 import java.net.*
 import java.io.*
 import scala.io.Source
 import java.nio.ByteBuffer
+import java.util.Locale
 import scala.deriving.*
 import scala.compiletime.*
 import scala.reflect.ClassTag
@@ -42,6 +48,7 @@ def kexClient() = SSHMsg.KexInit(
 
 implicit val ctx: SSHContext = SSHContext()
 
+// implement the required ssh-dss
 def verify(H: Array[Byte], sig_of_H: Array[Byte]): SSHReader[Boolean] = for
     alg <- SSHReader[String]
     _ = assert(alg == "ssh-rsa")
@@ -57,13 +64,13 @@ yield {
 
 // replace as much jsch logic as possible with the JVM builtin cypher stuff
 
-val sshProtocol: SSHReader[SSHMsg.KexECDHReply] = for
+val sshProtocol = for
     vC <- SSHWriter.plain(new Transport.Identification(IdentificationString))
     vS <- SSHReader[Transport.Identification]
     bpKexClient <- SSHWriter.overBinaryProtocol(kexClient())
     (kexServer, bpKexServer) <- SSHReader.fromBinaryProtocol[SSHMsg.KexInit](mac = false)
     // TODO negotiate intead of assuming XDH / X25519
-    (ecdh: ECDHN, qC: Array[Byte]) <- {
+    (ecdh, qC) <- {
         // https://datatracker.ietf.org/doc/html/rfc5656#section-4
 
         val ecdh = new ECDHN()
@@ -74,8 +81,8 @@ val sshProtocol: SSHReader[SSHMsg.KexECDHReply] = for
           overBinaryProtocol(SSHMsg.KexECDHInit(qC)).
           map(_ => (ecdh, qC))
     }
-    (ecdhReply, ecdhBp) <- SSHReader.fromBinaryProtocol[SSHMsg.KexECDHReply](mac = true)
-    _ <- {
+    (ecdhReply, ecdhBp) <- SSHReader.fromBinaryProtocol[SSHMsg.KexECDHReply](mac = false)
+    sshContext <- {
         val rs = Exposed.fromPoint(ecdhReply.qS)
         assert(ecdh.validate(rs(0), rs(1)))
 
@@ -100,15 +107,98 @@ val sshProtocol: SSHReader[SSHMsg.KexECDHReply] = for
         sha256.update(foo, 0, foo.length)
         val H = sha256.digest
 
-        verify(H, sigofH).read(BinaryProtocol(ByteBuffer.wrap(ecdhReply.kS))) match {
-            case Right(true) =>
-            case _ => throw RuntimeException("Failed to verify kex")
-        }
-        SSHWriter.overBinaryProtocol(SSHMsg.NewKeys)
+        SSHReader.pure(
+            verify(H, sigofH).read(BinaryProtocol(ByteBuffer.wrap(ecdhReply.kS))).left.map {
+                _ => Err.Oth("Failed to verify kex")
+            }
+        ).map(_ => {
+            val cypherC2S = new AES128CTR()
+            val cypherS2C = new AES128CTR()
+
+            val macC2S = new HMACSHA1()
+            val macS2C = new HMACSHA1()
+
+            def hash(sep: Byte): Array[Byte] = {
+                val buf = new ExposedBuffer()
+                sha256.init()
+                buf.putMPInt(K)
+                buf.putByte(H)
+                buf.putByte(sep)
+                buf.putByte(H)
+                sha256.update(buf.getBuffer, 0, buf.getIndex)
+                sha256.digest()
+            }
+
+            val ivC2S = hash('A') // Initial IV client to server:     HASH (K || H || "A" || session_id)
+            val ivS2C = hash('B') // Initial IV server to client:     HASH (K || H || "B" || session_id)
+            val ecC2S = hash('C') // Encryption key client to server: HASH (K || H || "C" || session_id)
+            val ecS2C = hash('D') // Encryption key server to client: HASH (K || H || "D" || session_id)
+            val ikC2S = hash('E') // Integrity key client to server:  HASH (K || H || "E" || session_id)
+            val ikS2C = hash('F') // Integrity key server to client:  HASH (K || H || "F" || session_id)
+
+            /*
+             *   K1 = HASH(K || H || X || session_id)   (X is e.g., "A")
+             *   K2 = HASH(K || H || K1)
+             *   K3 = HASH(K || H || K1 || K2)
+             *   ...
+             *   key = K1 || K2 || K3 || ...
+             */
+            def expandKey(key: Array[Byte], requiredLength: Int): Array[Byte] = {
+                val buf = new ExposedBuffer()
+                val blockSize = sha256.getBlockSize
+                buf.reset()
+                buf.putMPInt(K)
+                buf.putByte(H)
+
+                sha256.init()
+                sha256.update(buf.getBuffer, 0, buf.getIndex)
+
+                def loop(length: Int, previous: Array[Byte]): List[Array[Byte]] = {
+                    if (length > requiredLength) {
+                        Nil
+                    } else {
+                        sha256.update(previous, 0, previous.length)
+                        val current = sha256.digest()
+                        current :: loop(length + blockSize, current)
+                    }
+                }
+
+                (key :: loop(buf.getIndex, key)).toArray.flatten
+            }
+
+            macC2S.init(expandKey(ikC2S, macC2S.getBlockSize))
+            macS2C.init(expandKey(ikS2C, macS2C.getBlockSize))
+
+            cypherC2S.init(0, ecC2S, ivC2S)
+            cypherS2C.init(1, ecS2C, ivS2C)
+
+            SSHContext(Some(H), Some(sha256), Some(cypherC2S), Some(cypherS2C), Some(macC2S), Some(macS2C))
+        })
     }
-    //    _ <- SSHReader.fromBinaryProtocol[SSHMsg.NewKeys.type](mac = false)
+    _ <- SSHWriter.overBinaryProtocol(SSHMsg.NewKeys)
+    _ <- SSHReader.fromBinaryProtocol[SSHMsg.NewKeys.type](mac = false)
+    _ <- {
+        implicit val ctx:SSHContext = sshContext
+        val msg = SSHMsg.ServiceRequest(Service.`ssh-userauth`)
+        val errOrPacket = for
+            binary <- SSHWriter.transport[SSHMsg.ServiceRequest](msg)
+        yield
+            Transport.encrypt(binary)
+
+        for
+            packet: Transport.EncryptedPacket <- SSHReader.pure(errOrPacket)
+            _ <- SSHWriter.send(packet)
+        yield
+            packet
+    }
+//    _ <- SSHWriter.overBinaryProtocol()
+// _ <- read NewKeys = 21
+// _ <- write ServiceRequest = 5
+// _ <- read ServiceAccept = 6
+// _ <- write UserauthRequest = 50
+// _ <- read UserauthFailure = 51 | UserauthSuccess = 52
 yield
-    ecdhReply
+    sshContext
 
 def negotiate(server: SSHMsg.KexInit, client: SSHMsg.KexInit): SSHMsg.KexInit =
     val kexAlgorithm = client.kexAlgorithms.find(client.kexAlgorithms.contains)
@@ -128,10 +218,13 @@ def connect(bis: BufferedInputStream, bos: BufferedOutputStream) =
     //  val dh = new DHEC256(ident.getBytes, IdentificationString.getBytes, ???, ???)
     //  dh.init(sess)
 
+    println("Pause:")
+    Thread.sleep(3000)
+
     println("Remaining:")
     LazyList.continually(bis.read).
-      map(c => f"${c}%02X-").
-      take(30).
+      map(c => f"${c.toByte}%02X-").
+      take(50).
       foreach(print)
 
     println("Finished!")

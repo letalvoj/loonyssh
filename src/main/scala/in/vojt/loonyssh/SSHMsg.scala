@@ -1,5 +1,10 @@
 package in.vojt.loonyssh
 
+import com.jcraft.jsch.jce.AES128CTR
+import com.jcraft.jsch.ExposedBuffer
+import com.jcraft.jsch.jce.HMACSHA1
+
+import java.util.Locale
 import scala.compiletime.constValue
 import scala.compiletime.erasedValue
 
@@ -51,7 +56,7 @@ object SSHMsg:
      * string    description in ISO-10646 UTF-8 encoding [RFC3629]
      * string    language tag [RFC3066]
      */
-    case class Disconnect(code: DisconnectCode, description: String, language: String) extends SSHMsg[Magic.Disconnect](constValue)
+    case class Disconnect(code: DisconnectCode, description: String, language: Locale) extends SSHMsg[Magic.Disconnect](constValue)
 
     /**
      * byte      SSH_MSG_IGNORE
@@ -71,23 +76,22 @@ object SSHMsg:
      * string    message in ISO-10646 UTF-8 encoding [RFC3629]
      * string    language tag [RFC3066]
      */
-    case class Debug(
-                      alwaysDisplay: Boolean,
-                      message: String,
-                      language: String,
+    case class Debug(alwaysDisplay: Boolean,
+                     message: String,
+                     language: Locale,
                     ) extends SSHMsg[Magic.Debug](constValue)
 
     /**
      * byte      SSH_MSG_SERVICE_REQUEST
      * string    service name
      */
-    case class ServiceRequest(serviceName: String) extends SSHMsg[Magic.ServiceRequest](constValue)
+    case class ServiceRequest(serviceName: Service) extends SSHMsg[Magic.ServiceRequest](constValue)
 
     /**
      * byte      SSH_MSG_SERVICE_ACCEPT
      * string    service name
      */
-    case class ServiceAccept(serviceName: String) extends SSHMsg[Magic.ServiceAccept](constValue)
+    case class ServiceAccept(serviceName: Service) extends SSHMsg[Magic.ServiceAccept](constValue)
 
     /**
      * byte         SSH_MSG_KEXINIT
@@ -177,14 +181,36 @@ enum Transport:
                       pad: Byte,
                       magic: Byte,
                       payload: Array[Byte],
-                      padding: Array[Byte],
-                      mac: Array[Byte])
+                      padding: Array[Byte])
+
+    case EncryptedPacket(len: Int,
+                         payload: Array[Byte],
+                         mac: Array[Byte])
 
 object Transport:
+    def encrypt(packet: Transport.BinaryPacket)(using ctx: SSHContext): Transport.EncryptedPacket = ctx match
+        case SSHContext(_, _, Some(cypherC2S), _, Some(macC2S), _) =>
+            val encrypted = new Array[Byte](65536)
+            val mac = new Array[Byte](macC2S.getBlockSize)
+            val buf = new ExposedBuffer()
+            buf.putInt(packet.len)
+            buf.putByte(packet.pad)
+            buf.putByte(packet.magic)
+            buf.putByte(packet.payload)
+            buf.putByte(packet.padding)
+            cypherC2S.update(buf.getBuffer, 0, buf.getIndex, buf.getBuffer, 0)
+
+            macC2S.update(ctx.seqo)
+            macC2S.update(buf.getBuffer, 0, buf.getIndex)
+            macC2S.doFinal(mac, 0)
+
+            new Transport.EncryptedPacket(packet.len, buf.getBuffer.take(buf.getIndex), mac)
+
+
     def apply(magic: Byte, data: Array[Byte])(using ctx: SSHContext): Transport.BinaryPacket =
         val length = 4 + 2 + data.size
 
-        val blockSize = ctx.cypherBlockSize max 8
+        val blockSize = ctx.cypherC2SBlockSize
         val minPadding = (blockSize - 1) & (-length)
         val padding =
             if (minPadding < blockSize)
@@ -201,5 +227,4 @@ object Transport:
             magic,
             data,
             Array.fill(padding)(8),
-            Array.empty, // mac:none - for now
         )

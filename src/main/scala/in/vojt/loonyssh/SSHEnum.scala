@@ -204,114 +204,70 @@ enum PseudoTerminalModes(val code: Int) extends SSHEnum :
 object PseudoTerminalModes extends SSHReader.ByKey[PseudoTerminalModes, Int](_.code)
 
 enum Service extends SSHEnum :
-    @targetName("ssh-userauth")
     case `ssh-userauth`
-    @targetName("ssh-connection")
     case `ssh-connection`
 
 enum AuthenticationMethod extends SSHEnum :
-    @targetName("publickey")
     case `publickey`
-    @targetName("password")
     case `password`
-    @targetName("hostBased")
     case `hostBased`
-    @targetName("none")
     case `none`
 
 enum ConnectionProtocolChannelType extends SSHEnum :
-    @targetName("session")
     case `session`
-    @targetName("x11")
     case `x11`
-    @targetName("forwarded-tcpip")
     case `forwarded-tcpip`
-    @targetName("direct-tcpip")
     case `direct-tcpip`
 
 enum ConnectionProtocolRequestType extends SSHEnum :
-    @targetName("tcpip-forward")
     case `tcpip-forward`
-    @targetName("cancel-tcpip-forward")
     case `cancel-tcpip-forward`
 
 enum ConnectionProtocolChannelRequestName extends SSHEnum :
-    @targetName("pty-req")
     case `pty-req`
-    @targetName("x11-req")
     case `x11-req`
-    @targetName("env")
     case `env`
-    @targetName("shell")
     case `shell`
-    @targetName("exec")
     case `exec`
-    @targetName("subsystem")
     case `subsystem`
-    @targetName("window-change")
     case `window-change`
-    @targetName("xon-xoff")
     case `xon-xoff`
-    @targetName("signal")
     case `signal`
-    @targetName("exit-status")
     case `exit-status`
-    @targetName("exit-signal")
     case `exit-signal`
 
 enum SignalName extends SSHEnum :
-    @targetName("ABRT")
     case `ABRT`
-    @targetName("ALRM")
     case `ALRM`
-    @targetName("FPE")
     case `FPE`
-    @targetName("HUP")
     case `HUP`
-    @targetName("ILL")
     case `ILL`
-    @targetName("INT")
     case `INT`
-    @targetName("KILL")
     case `KILL`
-    @targetName("PIPE")
     case `PIPE`
-    @targetName("QUIT")
     case `QUIT`
-    @targetName("SEGV")
     case `SEGV`
-    @targetName("TERM")
     case `TERM`
-    @targetName("USR1")
     case `USR1`
-    @targetName("USR2")
     case `USR2`
 
 enum KeyExchangeMethod extends SSHEnum :
-    @targetName("ecdh-sha2-nistp256")
     case `ecdh-sha2-nistp256`
     case Unknown(value: String)
 
 enum EncryptionAlgorithm extends SSHEnum :
-    @targetName("aes128-ctr")
     case `aes128-ctr`
-    @targetName("none")
     case `none`
     case Unknown(value: String)
 
 enum MACAlgorithm extends SSHEnum :
-    @targetName("hmac-sha1")
     case `hmac-sha1`
-    @targetName("hmac-sha2-256")
     case `hmac-sha2-256`
-    @targetName("none")
     case `none`
     case Unknown(value: String)
 
 enum PublicKeyAlgorithm extends SSHEnum :
-    @targetName("ssh-rsa")
     case `ssh-rsa`
-    @targetName("ssh-ed25519")
     case `ssh-ed25519`
     case Unknown(value: String)
 

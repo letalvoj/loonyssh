@@ -8,6 +8,7 @@ import java.nio.ByteBuffer
 import scala.reflect.ClassTag
 import java.net.*
 import java.io.*
+import java.util.Locale
 import scala.deriving.*
 import scala.compiletime.*
 import scala.language.implicitConversions
@@ -16,7 +17,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
 trait SSHReader[S]:
-    
+
     def read(t: BinaryProtocol): ErrOr[S]
 
     // cats &| other FP lib
@@ -76,9 +77,11 @@ object SSHReader:
             buf.toArray[Byte]
 
 
-    given SSHReader[Int] = bb => bb.getInt
+    given SSHReader[Locale] = SSHReader[String].map(Locale.forLanguageTag)
 
-    given SSHReader[Byte] = bb => bb.get
+    given SSHReader[Int] = _.getInt
+
+    given SSHReader[Byte] = _.get
 
     inline def arrayReader(n: Int): SSHReader[Array[Byte]] = _.getByteArray(n)
 
@@ -98,8 +101,7 @@ object SSHReader:
         magic <- SSHReader[Byte]
         payload <- arrayReader(lm - lp - 2)
         padding <- arrayReader(lp)
-        mac <- if (mac) SSHReader[Array[Byte]] else arrayReader(0)
-    } yield new Transport.BinaryPacket(lm, lp, magic, payload, padding, mac)
+    } yield new Transport.BinaryPacket(lm, lp, magic, payload, padding)
 
     given SSHReader[NameList[String]] = SSHReader[String].map(s => NameList(s.split(",").toList))
 

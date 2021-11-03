@@ -11,9 +11,10 @@ import scala.util.control.NonFatal
 enum Err:
     case Exc(e: Exception)
     case Unk[K](expl: String, k: K)
-    case Oth[K](expl: String)
+    case Oth(expl: String)
     case Magic(exp: Int, act: Int)
     case FailedPattern
+    case EmptyWriter
 
 type ErrOr[V] = Either[Err, V]
 
