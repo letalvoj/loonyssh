@@ -175,7 +175,6 @@ enum Transport:
      * byte[n1]  payload; n1 = packet_length - padding_length - 1
      * byte[n2]  random padding; n2 = padding_length
      * byte[m]   mac (Message Authentication Code - MAC); m = mac_length
-     * oboslete
      */
     case BinaryPacket(len: Int,
                       pad: Byte,
@@ -183,14 +182,12 @@ enum Transport:
                       payload: Array[Byte],
                       padding: Array[Byte])
 
-    case EncryptedPacket(len: Int,
-                         payload: Array[Byte],
+    case EncryptedPacket(payload: Array[Byte],
                          mac: Array[Byte])
 
 object Transport:
     def encrypt(packet: Transport.BinaryPacket)(using ctx: SSHContext): Transport.EncryptedPacket = ctx match
         case SSHContext(_, _, Some(cypherC2S), _, Some(macC2S), _) =>
-            val encrypted = new Array[Byte](65536)
             val mac = new Array[Byte](macC2S.getBlockSize)
             val buf = new ExposedBuffer()
             buf.putInt(packet.len)
@@ -198,33 +195,27 @@ object Transport:
             buf.putByte(packet.magic)
             buf.putByte(packet.payload)
             buf.putByte(packet.padding)
-            cypherC2S.update(buf.getBuffer, 0, buf.getIndex, buf.getBuffer, 0)
 
-            macC2S.update(ctx.seqo)
+            macC2S.update(SSHContext.seqo.get())
             macC2S.update(buf.getBuffer, 0, buf.getIndex)
             macC2S.doFinal(mac, 0)
 
-            new Transport.EncryptedPacket(packet.len, buf.getBuffer.take(buf.getIndex), mac)
+            cypherC2S.update(buf.getBuffer, 0, buf.getIndex, buf.getBuffer, 0)
+
+            new Transport.EncryptedPacket(buf.getBuffer.take(buf.getIndex), mac)
 
 
     def apply(magic: Byte, data: Array[Byte])(using ctx: SSHContext): Transport.BinaryPacket =
-        val length = 4 + 2 + data.size
-
+        val payloadSize = data.length + 1
         val blockSize = ctx.cypherC2SBlockSize
-        val minPadding = (blockSize - 1) & (-length)
-        val padding =
-            if (minPadding < blockSize)
-                (minPadding + blockSize)
-            else
-                minPadding
-
-        println(s"> BP --->>> ${4} ${1} ${data.length} ${padding}")
-        println(s"> BP --->>> ${padding} ${magic} ${data.toSeq}")
+        // the extra 8 bytes can be for if in etm mode where packet size is not encrypted
+        val paddingSize = (3 + blockSize - ((payloadSize + 8) % blockSize)).toByte
+        val packetSize = payloadSize + paddingSize + 1
 
         new Transport.BinaryPacket(
-            length + padding - 4,
-            padding.toByte,
+            packetSize,
+            paddingSize,
             magic,
             data,
-            Array.fill(padding)(8),
+            Array.fill(paddingSize)(8),
         )

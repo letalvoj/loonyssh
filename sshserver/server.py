@@ -1,4 +1,5 @@
 #!/Users/vletal/.conda/envs/loonyssh/bin/python3.9
+import logging
 import os
 import socket
 import sys
@@ -7,10 +8,13 @@ import traceback
 from binascii import hexlify
 
 import paramiko
+from paramiko import util
 from paramiko.py3compat import u, decodebytes
 
+
 # setup logging
-paramiko.util.log_to_file("demo_server.log")
+util.get_logger("paramiko").setLevel(logging.DEBUG)
+util.get_logger("paramiko").addHandler(logging.StreamHandler(sys.stdout))
 
 host_key = paramiko.RSAKey(filename="test_rsa.key")
 # # host_key = paramiko.DSSKey(filename='test_dss.key')
@@ -119,6 +123,7 @@ if __name__ == '__main__':
 
         try:
             t = paramiko.Transport(client, gss_kex=DoGSSAPIKeyExchange)
+            t.packetizer.__dump_packets = True
             t.set_gss_host(socket.getfqdn(""))
             try:
                 t.load_server_moduli()

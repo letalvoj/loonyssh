@@ -34,6 +34,7 @@ object SSHWriter:
             Transport(magic, data)
 
     def overBinaryProtocolEncrypted[V <: SSHMsg[?] : SSHWriter](value: V)(using ctx: SSHContext): SSHReader[Transport.BinaryPacket] = iop =>
+        SSHContext.seqo.incrementAndGet()
         for
             tp <- transport(value)
             _ <- SSHWriter[Transport.BinaryPacket].write(iop, tp)
@@ -41,6 +42,7 @@ object SSHWriter:
         yield tp
 
     def overBinaryProtocol[V <: SSHMsg[?] : SSHWriter](value: V)(using ctx: SSHContext): SSHReader[Transport.BinaryPacket] = iop =>
+        SSHContext.seqo.incrementAndGet()
         for
             tp <- transport(value)
             _ <- SSHWriter[Transport.BinaryPacket].write(iop, tp)
@@ -48,6 +50,7 @@ object SSHWriter:
         yield tp
 
     def send[P : SSHWriter](packet: P): SSHReader[P] = iop =>
+        SSHContext.seqo.incrementAndGet()
         for
             _ <- SSHWriter[P].write(iop, packet)
             _ <- ErrOr.catchIO(iop.flush)

@@ -4,7 +4,7 @@ import com.jcraft.jsch.jce.SHA256
 import com.jcraft.jsch.Buffer
 import com.jcraft.jsch.Exposed
 import com.jcraft.jsch.jce.AES128CTR
-import com.jcraft.jsch.jce.HMACSHA1
+import com.jcraft.jsch.jce.HMACSHA256
 import com.jcraft.jsch.ExposedBuffer
 import com.jcraft.jsch.HASH
 import com.jcraft.jsch.Util
@@ -36,8 +36,8 @@ def kexClient() = SSHMsg.KexInit(
     serverHostKeyAlgorithms = NameList(List(PublicKeyAlgorithm.`ssh-rsa`)),
     encryptionAlgorithmsClientToServer = NameList(List(EncryptionAlgorithm.`aes128-ctr`)),
     encryptionAlgorithmsServerToClient = NameList(List(EncryptionAlgorithm.`aes128-ctr`)),
-    macAlgorithmsClientToServer = NameList(List(MACAlgorithm.`hmac-sha1`)),
-    macAlgorithmsServerToClient = NameList(List(MACAlgorithm.`hmac-sha1`)),
+    macAlgorithmsClientToServer = NameList(List(MACAlgorithm.`hmac-sha2-256`)),
+    macAlgorithmsServerToClient = NameList(List(MACAlgorithm.`hmac-sha2-256`)),
     compressionAlgorithmsClientToServer = NameList(List(CompressionAlgorithm.`none`)),
     compressionAlgorithmsServerToClient = NameList(List(CompressionAlgorithm.`none`)),
     languagesClientToServer = NameList(List()),
@@ -115,8 +115,8 @@ val sshProtocol = for
             val cypherC2S = new AES128CTR()
             val cypherS2C = new AES128CTR()
 
-            val macC2S = new HMACSHA1()
-            val macS2C = new HMACSHA1()
+            val macC2S = new HMACSHA256()
+            val macS2C = new HMACSHA256()
 
             def hash(sep: Byte): Array[Byte] = {
                 val buf = new ExposedBuffer()
@@ -177,14 +177,14 @@ val sshProtocol = for
     }
     _ <- SSHWriter.overBinaryProtocol(SSHMsg.NewKeys)
     _ <- SSHReader.fromBinaryProtocol[SSHMsg.NewKeys.type](mac = false)
-    _ <- {
+    encrypted <- {
         implicit val ctx:SSHContext = sshContext
         val msg = SSHMsg.ServiceRequest(Service.`ssh-userauth`)
         val errOrPacket = for
             binary <- SSHWriter.transport[SSHMsg.ServiceRequest](msg)
         yield
             Transport.encrypt(binary)
-
+            
         for
             packet: Transport.EncryptedPacket <- SSHReader.pure(errOrPacket)
             _ <- SSHWriter.send(packet)
@@ -198,7 +198,7 @@ val sshProtocol = for
 // _ <- write UserauthRequest = 50
 // _ <- read UserauthFailure = 51 | UserauthSuccess = 52
 yield
-    sshContext
+    encrypted
 
 def negotiate(server: SSHMsg.KexInit, client: SSHMsg.KexInit): SSHMsg.KexInit =
     val kexAlgorithm = client.kexAlgorithms.find(client.kexAlgorithms.contains)

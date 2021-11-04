@@ -16,6 +16,7 @@ import scala.collection.mutable.ArrayBuffer
 
 //TODO error handling should be pushed here
 // so far all these ops are unsafe
+/** Overlaps with jsch.Buffer */
 trait BinaryProtocol:
 
     protected def unsafeGetInt: Int
@@ -41,7 +42,7 @@ trait BinaryProtocol:
         log("B", unsafeGet, identity)
 
     def getByteArray(n: Int): ErrOr[Array[Byte]] =
-        log("A", unsafeGetByteArray(n), orArr => orArr.map(arr => s"[${arr.map(toChar).mkString.take(130)}...]"))
+        log("A", unsafeGetByteArray(n), orArr => orArr.map(arr => s"[${arr.map(BinaryProtocol.toChar).mkString.take(130)}...]"))
 
     def putInt(v: Int): ErrOr[Unit] =
         println(s"> I $sn->>> $v")
@@ -52,7 +53,7 @@ trait BinaryProtocol:
         ErrOr.catchIO(unsafePut(v))
 
     def putByteArray(v: Array[Byte]): ErrOr[Unit] =
-        println(s"> A $sn->>> [${v.map(toChar).mkString.take(130)}...]")
+        println(s"> A $sn->>> [${v.map(BinaryProtocol.toChar).mkString.take(130)}...]")
         ErrOr.catchIO(unsafePutByteArray(v))
 
     private def log[V, O](tp: String, eventualV: => V, format: ErrOr[V] => O): ErrOr[V] =
@@ -60,9 +61,10 @@ trait BinaryProtocol:
         println(s"< $tp $sn-<<< ${format(v)}")
         return v
 
-    private def toChar(i: Byte) = if (i > 32 && i < 127) i.toChar.toString else f"\u${i}%02X"
-
 object BinaryProtocol:
+
+    def toChar(i: Byte) = if (i > 32 && i < 127) i.toChar.toString else f"\u${i}%02X"
+
     def apply(is: InputStream, os: OutputStream) =
         InputStreamBinaryProtocol(is, os)
 

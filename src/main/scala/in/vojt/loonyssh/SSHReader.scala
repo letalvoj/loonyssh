@@ -40,6 +40,7 @@ object SSHReader:
     inline def pure[S](eos: ErrOr[S]): SSHReader[S] = _ => eos
 
     inline def fromBinaryProtocol[S <: SSHMsg[?] : SSHReader](mac: Boolean): SSHReader[(S, Transport.BinaryPacket)] = bb =>
+        SSHContext.seqi.incrementAndGet()
         for {
             bp <- transportReader(mac).read(bb)
             magic = SSHMsg.magic[S]
