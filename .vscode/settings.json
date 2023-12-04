@@ -1,0 +1,6 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "./rustyssh_macros/Cargo.toml",
+        "./rustyssh/Cargo.toml",
+    ]
+}
