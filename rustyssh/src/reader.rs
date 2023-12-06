@@ -1,4 +1,9 @@
 
+pub trait ReadSSH {
+    fn read_ssh<R: std::io::Read>(reader: R) -> Result<Self, std::io::Error>
+    where
+        Self: Sized;
+}
 
 impl ReadSSH for u32 {
     fn read_ssh<R: std::io::Read>(mut reader: R) -> Result<Self, std::io::Error> {

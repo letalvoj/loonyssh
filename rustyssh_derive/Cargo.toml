@@ -1,0 +1,37 @@
+[package]
+name = "rustyssh_derive"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+[dependencies.proc-macro-crate]
+version = ">= 1, <= 2"
+optional = true
+
+[dependencies.proc-macro2]
+version = "1.0.60"
+
+[dependencies.quote]
+version = "1"
+
+[dependencies.syn]
+version = "2"
+features = ["full"]
+
+[dev-dependencies.syn]
+version = "2"
+features = [
+    "extra-traits",
+    "parsing",
+]
+
+[features]
+complex-expressions = ["syn/full"]
+default = ["std"]
+external_doc = []
+std = ["proc-macro-crate"]
