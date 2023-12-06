@@ -2,6 +2,10 @@
     "rust-analyzer.linkedProjects": [
         "./rustyssh_macros/Cargo.toml",
         "./rustyssh/Cargo.toml",
-        "./rustyssh_traits/Cargo.toml"
+        "./rustyssh_traits/Cargo.toml",
+        "./rustyssh_derive/Cargo.toml",
+        "./rustyssh_derive/Cargo.toml",
+        "./rustyssh_derive/Cargo.toml",
+        "./rustyssh_derive/Cargo.toml"
     ]
 }
