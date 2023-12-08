@@ -161,6 +161,7 @@ dependencies = [
  "log",
  "num_enum",
  "openssl",
+ "pretty-hex",
  "rustyssh_derive",
  "serde",
  "serde_json",
@@ -243,6 +244,12 @@ name = "pkg-config"
 version = "0.3.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26072860ba924cbfa98ea39c8c19b4dd6a4a25423dbdf219c1eca91aa0cf6964"
+
+[[package]]
+name = "pretty-hex"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23c6b968ed37d62e35b4febaba13bfa231b0b7929d68b8a94e65445a17e2d35f"
 
 [[package]]
 name = "proc-macro-crate"

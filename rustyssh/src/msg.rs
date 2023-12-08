@@ -1,26 +1,23 @@
 use crate::api::{ReadSSH, WriteSSH};
 pub use ::rustyssh_derive::{ReadSSH, WriteSSH};
 
-pub trait SSHMessage{
+pub trait SSHMagic{
     const MAGIC: u8;
 }
 
-#[derive(Debug)]
-pub enum SSHMessageType {
-    Disconnect(Disconnect),
-    // ... other message types ...
-}
-
-pub fn read_next_message<R: std::io::Read>(mut reader: R) -> Result<SSHMessageType, std::io::Error> {
+#[allow(dead_code)]
+pub fn read_next_message<R: std::io::Read>(mut reader: R) -> Result<SSHMsg, std::io::Error> {
     let magic = u8::read_ssh(&mut reader)?;
 
     match magic {
-        Disconnect::MAGIC => Disconnect::read_ssh(reader).map(SSHMessageType::Disconnect),
+        MsgDisconnect::MAGIC => MsgDisconnect::read_ssh(reader).map(SSHMsg::Disconnect),
+        MsgKexInit::MAGIC => MsgKexInit::read_ssh(reader).map(SSHMsg::KexInit),
         _ => Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Unknown magic number")),
     }
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum Magic {
     Disconnect = 1,               // byte       SSH_MSG_DISCONNECT
     Ignore = 2,                   // byte       SSH_MSG_IGNORE
@@ -75,13 +72,14 @@ pub enum DisconnectCode {
 
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
 pub enum ChannelOpenFailure {
-    ADMINISTRATIVELY_PROHIBITED = 1, // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
-    CONNECT_FAILED = 2,              // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
-    UNKNOWN_CHANNEL_TYPE = 3,        // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
-    RESOURCE_SHORTAGE = 4,           // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
+    AdministrativelyProhibited = 1, // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
+    ConnectFailed = 2,              // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
+    UnknownChannelType = 3,        // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
+    ResourceShortage = 4,           // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
 }
 
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
 pub enum PseudoTerminalModes {
     TTY_OP_END = 0,      // Indicates end of options.
     VINTR = 1,           // Interrupt character; 255 if none.  Similarly for the other characters.
@@ -141,203 +139,231 @@ pub enum PseudoTerminalModes {
     TTY_OP_OSPEED = 129, // Specifies the output baud rate in bits per second.
 }
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub enum Service {
-//     ssh__userauth,
-//     ssh__connection,
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
+pub enum Service {
+    ssh__userauth,
+    ssh__connection,
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub enum AuthenticationMethod {
-//     publickey,
-//     password,
-//     hostBased,
-//     none,
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
+pub enum AuthenticationMethod {
+    publickey,
+    password,
+    hostBased,
+    none,
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub enum ConnectionProtocolChannelType {
-//     session,
-//     x11,
-//     forwarded__tcpip,
-//     direct__tcpip,
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
+pub enum ConnectionProtocolChannelType {
+    session,
+    x11,
+    forwarded__tcpip,
+    direct__tcpip,
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub enum ConnectionProtocolRequestType {
-//     tcpip__forward,
-//     cancel__tcpip__forward,
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
+pub enum ConnectionProtocolRequestType {
+    tcpip__forward,
+    cancel__tcpip__forward,
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub enum ConnectionProtocolChannelRequestName {
-//     pty__req,
-//     x11__req,
-//     env,
-//     shell,
-//     exec,
-//     subsystem,
-//     window__change,
-//     xon__xoff,
-//     signal,
-//     exit__status,
-//     exit__signal,
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
+pub enum ConnectionProtocolChannelRequestName {
+    pty__req,
+    x11__req,
+    env,
+    shell,
+    exec,
+    subsystem,
+    window__change,
+    xon__xoff,
+    signal,
+    exit__status,
+    exit__signal,
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub enum SignalName {
-//     ABRT,
-//     ALRM,
-//     FPE,
-//     HUP,
-//     ILL,
-//     INT,
-//     KILL,
-//     PIPE,
-//     QUIT,
-//     SEGV,
-//     TERM,
-//     USR1,
-//     USR2,
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
+pub enum SignalName {
+    ABRT,
+    ALRM,
+    FPE,
+    HUP,
+    ILL,
+    INT,
+    KILL,
+    PIPE,
+    QUIT,
+    SEGV,
+    TERM,
+    USR1,
+    USR2,
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub enum KeyExchangeMethod {
-//     ecdh__sha2__nistp256,
-//     Unknown(String),
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
+pub enum KeyExchangeMethod {
+    ecdh__sha2__nistp256,
+    Unknown(String),
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub enum EncryptionAlgorithm {
-//     aes128__ctr,
-//     none,
-//     Unknown(String),
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
+pub enum EncryptionAlgorithm {
+    aes128__ctr,
+    none,
+    Unknown(String),
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub enum MACAlgorithm {
-//     hmac__sha1,
-//     hmac__sha2__256,
-//     none,
-//     Unknown(String),
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
+pub enum MACAlgorithm {
+    hmac__sha1,
+    hmac__sha2__256,
+    none,
+    Unknown(String),
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub enum PublicKeyAlgorithm {
-//     ssh__rsa,
-//     ssh__ed25519,
-//     Unknown(String),
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
+pub enum PublicKeyAlgorithm {
+    ssh__rsa,
+    ssh__ed25519,
+    Unknown(String),
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub enum CompressionAlgorithm {
-//     zlib,
-//     none,
-//     Unknown(String),
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+#[allow(non_camel_case_types, non_snake_case)]
+pub enum CompressionAlgorithm {
+    zlib,
+    none,
+    Unknown(String),
+}
 
 // Structs
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-pub struct Disconnect {
+pub struct MsgDisconnect {
     pub code: DisconnectCode, // uint32    reason code
     pub description: String,  // string    description in ISO__10646 UTF__8 encoding [RFC3629]
     pub language: String,     // string    language tag [RFC3066]
 }
 
-impl SSHMessage for Disconnect {
+impl SSHMagic for MsgDisconnect {
     const MAGIC: u8 = Magic::Disconnect as u8;
 }
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub struct Ignore {
-//     pub data: String, // string    data
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+pub struct MsgIgnore {
+    pub data: String, // string    data
+}
 
-// impl SSHMessage for Ignore {
-//     const MAGIC: u8 = Magic::Ignore as u8;
-// }
+impl SSHMagic for MsgIgnore {
+    const MAGIC: u8 = Magic::Ignore as u8;
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub struct Unimplemented {
-//     pub packet_sequence_number: u32, // uint32    packet sequence number of rejected message
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+pub struct MsgUnimplemented {
+    pub packet_sequence_number: u32, // uint32    packet sequence number of rejected message
+}
 
-// impl SSHMessage for Unimplemented {
-//     const MAGIC: u8 = Magic::Unimplemented as u8;
-// }
+impl SSHMagic for MsgUnimplemented {
+    const MAGIC: u8 = Magic::Unimplemented as u8;
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub struct Debug {
-//     pub always_display: bool, // boolean   always_display
-//     pub message: String,      // string    message in ISO__10646 UTF__8 encoding [RFC3629]
-//     pub language: String,     // string    language tag [RFC3066]
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+pub struct MsgDebug {
+    pub always_display: bool, // boolean   always_display
+    pub message: String,      // string    message in ISO__10646 UTF__8 encoding [RFC3629]
+    pub language: String,     // string    language tag [RFC3066]
+}
 
-// impl SSHMessage for Debug {
-//     const MAGIC: u8 = Magic::Debug as u8;
-// }
+impl SSHMagic for MsgDebug {
+    const MAGIC: u8 = Magic::Debug as u8;
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub struct ServiceRequest {
-//     pub service_name: String, // string    service name
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+pub struct MsgServiceRequest {
+    pub service_name: String, // string    service name
+}
 
-// impl SSHMessage for ServiceRequest {
-//     const MAGIC: u8 = Magic::ServiceRequest as u8;
-// }
+impl SSHMagic for MsgServiceRequest {
+    const MAGIC: u8 = Magic::ServiceRequest as u8;
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub struct ServiceAccept {
-//     pub service_name: String, // string    service name
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+pub struct MsgServiceAccept {
+    pub service_name: String, // string    service name
+}
 
-// impl SSHMessage for ServiceAccept {
-//     const MAGIC: u8 = Magic::ServiceAccept as u8;
-// }
+impl SSHMagic for MsgServiceAccept {
+    const MAGIC: u8 = Magic::ServiceAccept as u8;
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub struct KexInit {
-//     pub cookie: [u32; 4],            // byte[16]     cookie (random bytes)
-//     pub kex_algorithms: Vec<String>, // name-list    kex_algorithms
-//     pub server_host_key_algorithms: Vec<String>, // name-list    server_host_key_algorithms
-//     pub encryption_algorithms_client_to_server: Vec<String>, // name-list    encryption_algorithms_client_to_server
-//     pub encryption_algorithms_server_to_client: Vec<String>, // name-list    encryption_algorithms_server_to_client
-//     pub mac_algorithms_client_to_server: Vec<String>, // name-list    mac_algorithms_client_to_server
-//     pub mac_algorithms_server_to_client: Vec<String>, // name-list    mac_algorithms_server_to_client
-//     pub compression_algorithms_client_to_server: Vec<String>, // name-list    compression_algorithms_client_to_server
-//     pub compression_algorithms_server_to_client: Vec<String>, // name-list    compression_algorithms_server_to_client
-//     pub languages_client_to_server: Vec<String>, // name-list    languages_client_to_server
-//     pub languages_server_to_client: Vec<String>, // name-list    languages_server_to_client
-//     pub kex_first_packet_follows: bool,          // boolean      first_kex_packet_follows
-//     pub reserved: u32,                           // uint32       0 (reserved for future extension)
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+pub struct MsgKexInit {
+    pub cookie: [u8; 16],            // byte[16]     cookie (random bytes)
+    pub kex_algorithms: Vec<String>, // name-list    kex_algorithms
+    pub server_host_key_algorithms: Vec<String>, // name-list    server_host_key_algorithms
+    pub encryption_algorithms_client_to_server: Vec<String>, // name-list    encryption_algorithms_client_to_server
+    pub encryption_algorithms_server_to_client: Vec<String>, // name-list    encryption_algorithms_server_to_client
+    pub mac_algorithms_client_to_server: Vec<String>, // name-list    mac_algorithms_client_to_server
+    pub mac_algorithms_server_to_client: Vec<String>, // name-list    mac_algorithms_server_to_client
+    pub compression_algorithms_client_to_server: Vec<String>, // name-list    compression_algorithms_client_to_server
+    pub compression_algorithms_server_to_client: Vec<String>, // name-list    compression_algorithms_server_to_client
+    pub languages_client_to_server: Vec<String>, // name-list    languages_client_to_server
+    pub languages_server_to_client: Vec<String>, // name-list    languages_server_to_client
+    pub kex_first_packet_follows: bool,          // boolean      first_kex_packet_follows
+    pub reserved: u32,                           // uint32       0 (reserved for future extension)
+}
 
-// impl SSHMessage for KexInit {
-//     const MAGIC: u8 = Magic::KexInit as u8;
-// }
+impl SSHMagic for MsgKexInit {
+    const MAGIC: u8 = Magic::KexInit as u8;
+}
 
-// pub struct NewKeys;
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+pub struct MsgNewKeys{}
 
-// impl SSHMessage for NewKeys {
-//     const MAGIC: u8 = Magic::NewKeys as u8;
-// }
+impl SSHMagic for MsgNewKeys {
+    const MAGIC: u8 = Magic::NewKeys as u8;
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub struct KexECDHInit {
-//     pub q_c: Vec<u8>, // string   Q_C, client's ephemeral public key octet string
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+pub struct MsgKexECDHInit {
+    pub q_c: String, // string   Q_C, client's ephemeral public key octet string
+}
 
-// impl SSHMessage for KexECDHInit {
-//     const MAGIC: u8 = Magic::KexECDHInit as u8;
-// }
+impl SSHMagic for MsgKexECDHInit {
+    const MAGIC: u8 = Magic::KexECDHInit as u8;
+}
 
-// #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-// pub struct KexECDHReply {
-//     pub k_s: Vec<u8>,       // string   K_S, server's public host key
-//     pub q_s: Vec<u8>,       // string   Q_S, server's ephemeral public key octet string
-//     pub signature: Vec<u8>, // string   the signature on the exchange hash
-// }
+#[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
+pub struct MsgKexECDHReply {
+    pub k_s: String, // string   K_S, server's public host key
+    pub q_s: String, // string   Q_S, server's ephemeral public key octet string
+    pub signature: String, // string   the signature on the exchange hash
+}
 
-// impl SSHMessage for KexECDHReply {
-//     const MAGIC: u8 = Magic::KexECDHReply as u8;
-// }
+impl SSHMagic for MsgKexECDHReply {
+    const MAGIC: u8 = Magic::KexECDHReply as u8;
+}
+
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub enum SSHMsg {
+    Disconnect(MsgDisconnect),
+    Ignore(MsgIgnore),
+    Unimplemented(MsgUnimplemented),
+    Debug(MsgDebug),
+    ServiceRequest(MsgServiceRequest),
+    ServiceAccept(MsgServiceAccept),
+    KexInit(MsgKexInit),
+    NewKeys(MsgNewKeys),
+    KexECDHInit(MsgKexECDHInit),
+    KexECDHReply(MsgKexECDHReply),
+}

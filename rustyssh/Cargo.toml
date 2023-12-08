@@ -14,3 +14,4 @@ thiserror = "1.0"
 anyhow = "1.0"
 openssl = "0.10"
 rustyssh_derive = { path = "../rustyssh_derive" }
+pretty-hex = "0.4.0"
