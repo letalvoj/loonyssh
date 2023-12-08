@@ -7,7 +7,7 @@ pub trait SSHMagic{
 
 #[allow(dead_code)]
 pub fn read_next_message<R: std::io::Read>(mut reader: R) -> Result<SSHMsg, std::io::Error> {
-    let magic = u8::read_ssh(&mut reader)?;
+    let magic:u8 = u8::read_ssh(&mut reader)?;
 
     match magic {
         MsgDisconnect::MAGIC => MsgDisconnect::read_ssh(reader).map(SSHMsg::Disconnect),

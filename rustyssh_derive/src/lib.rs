@@ -1,9 +1,10 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, TypePath, Fields, Variant, Lit, Expr, ExprLit, Type, TypeArray, PathArguments, GenericArgument};
+use syn::{parse_macro_input, Data, DeriveInput, Fields, Type, TypeArray};
 
 fn has_discriminants(variants: &syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>) -> bool {
+    #[allow(unused_variables)]
     let has_discriminant = variants.iter().any(|v| {
         if let Some(discriminant) = &v.discriminant {
             eprintln!("Discriminant value: {:?}", quote::quote!(discriminant).to_string());

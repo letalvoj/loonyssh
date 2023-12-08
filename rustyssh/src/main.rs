@@ -5,7 +5,7 @@ mod msg;
 
 use pretty_hex::*;
 
-use crate::api::{ReadSSH, WriteSSH};
+use crate::api::WriteSSH;
 use crate::msg::*;
 
 
