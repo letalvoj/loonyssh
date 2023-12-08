@@ -1,18 +1,21 @@
 use crate::api::{ReadSSH, WriteSSH};
 pub use ::rustyssh_derive::{ReadSSH, WriteSSH};
 
-pub trait SSHMagic{
+pub trait SSHMagic {
     const MAGIC: u8;
 }
 
 #[allow(dead_code)]
 pub fn read_next_message<R: std::io::Read>(mut reader: R) -> Result<SSHMsg, std::io::Error> {
-    let magic:u8 = u8::read_ssh(&mut reader)?;
+    let magic: u8 = u8::read_ssh(&mut reader)?;
 
     match magic {
         MsgDisconnect::MAGIC => MsgDisconnect::read_ssh(reader).map(SSHMsg::Disconnect),
         MsgKexInit::MAGIC => MsgKexInit::read_ssh(reader).map(SSHMsg::KexInit),
-        _ => Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Unknown magic number")),
+        _ => Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Unknown magic number",
+        )),
     }
 }
 
@@ -74,7 +77,7 @@ pub enum DisconnectCode {
 pub enum ChannelOpenFailure {
     AdministrativelyProhibited = 1, // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
     ConnectFailed = 2,              // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
-    UnknownChannelType = 3,        // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
+    UnknownChannelType = 3,         // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
     ResourceShortage = 4,           // byte     SSH_MSG_CHANNEL_OPEN_FAILURE
 }
 
@@ -326,7 +329,7 @@ impl SSHMagic for MsgKexInit {
 }
 
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-pub struct MsgNewKeys{}
+pub struct MsgNewKeys {}
 
 impl SSHMagic for MsgNewKeys {
     const MAGIC: u8 = Magic::NewKeys as u8;
@@ -343,15 +346,14 @@ impl SSHMagic for MsgKexECDHInit {
 
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
 pub struct MsgKexECDHReply {
-    pub k_s: String, // string   K_S, server's public host key
-    pub q_s: String, // string   Q_S, server's ephemeral public key octet string
+    pub k_s: String,       // string   K_S, server's public host key
+    pub q_s: String,       // string   Q_S, server's ephemeral public key octet string
     pub signature: String, // string   the signature on the exchange hash
 }
 
 impl SSHMagic for MsgKexECDHReply {
     const MAGIC: u8 = Magic::KexECDHReply as u8;
 }
-
 
 #[derive(Debug)]
 #[allow(dead_code)]

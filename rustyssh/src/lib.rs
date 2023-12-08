@@ -1,2 +1,2 @@
-mod msg;
 mod api;
+mod msg;

@@ -3,19 +3,17 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields, Type, TypeArray};
 
-fn has_discriminants(variants: &syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>) -> bool {
+fn has_discriminants(
+    variants: &syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
+) -> bool {
     #[allow(unused_variables)]
     let has_discriminant = variants.iter().any(|v| {
         if let Some(discriminant) = &v.discriminant {
-            eprintln!("Discriminant value: {:?}", quote::quote!(discriminant).to_string());
             true // Return true to indicate that there's at least one variant with a discriminant
         } else {
             false // No discriminant in this variant
         }
     });
-
-    // Print a debug message with the overall result to the standard error stream
-    eprintln!("has_discriminants: {}", has_discriminant);
 
     has_discriminant
 }
@@ -24,8 +22,7 @@ fn has_discriminants(variants: &syn::punctuated::Punctuated<syn::Variant, syn::t
 pub fn derive_read_ssh(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let struct_name = input.ident;
-    eprintln!("READ>> Class name: {:?}",struct_name.to_string());
-    
+
     let expanded = match input.data {
         Data::Struct(ref data) => {
             match data.fields {
@@ -34,21 +31,15 @@ pub fn derive_read_ssh(input: TokenStream) -> TokenStream {
                         let field_name = &f.ident;
                         let field_type = &f.ty;
 
-                        eprintln!("TYPE: {:?}", quote! {#field_type}.to_string());
-
-                        let code = if let Type::Array(TypeArray { elem, len, .. }) = field_type{
-                            quote!{
+                        if let Type::Array(TypeArray { elem, len, .. }) = field_type {
+                            quote! {
                                 let #field_name = <[#elem; #len]>::read_ssh(&mut reader)?;
                             }
-                        }else{
+                        } else {
                             quote! {
                                 let #field_name = <#field_type>::read_ssh(&mut reader)?;
                             }
-                        };
-
-                        eprintln!("CODE: {:?}", code.to_string());
-
-                        code
+                        }
                     });
                     let field_names = fields.named.iter().map(|f| f.ident.as_ref().unwrap());
 
@@ -99,7 +90,7 @@ pub fn derive_read_ssh(input: TokenStream) -> TokenStream {
                 let variant = &v.ident;
                 let variant_str = variant.to_string();
 
-                let code = if !variant_str.contains("Unknown") {
+                if !variant_str.contains("Unknown") {
                     quote! {
                         name if name == #variant_str => Ok(#struct_name::#variant),
                     }
@@ -107,13 +98,9 @@ pub fn derive_read_ssh(input: TokenStream) -> TokenStream {
                     quote! {
                         name => Ok(#struct_name::Unknown(name.to_string())),
                     }
-                };
-
-                eprintln!("CODE: {:?}", code.to_string());
-
-                code
+                }
             });
-    
+
             quote! {
                 impl ReadSSH for #struct_name {
                     fn read_ssh<R: std::io::Read>(mut reader: R) -> Result<Self, std::io::Error> {
@@ -136,7 +123,6 @@ pub fn derive_read_ssh(input: TokenStream) -> TokenStream {
 pub fn derive_write_ssh(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let struct_name = input.ident;
-    eprintln!("WRITE>> Class name: {:?}",struct_name.to_string());
 
     let gen = match input.data {
         Data::Struct(data_struct) => match data_struct.fields {
@@ -187,13 +173,9 @@ pub fn derive_write_ssh(input: TokenStream) -> TokenStream {
             let variant_matches = data.variants.iter().map(|v| {
                 let variant = &v.ident;
                 let discriminant = v.discriminant.as_ref().map(|(_, expr)| quote! { #expr });
-                let code = quote! {
+                quote! {
                     #struct_name::#variant => #discriminant.write_ssh(writer),
-                };
-
-                eprintln!("CODE: {:?}", code.to_string());
-
-                code
+                }
             });
 
             quote! {
@@ -206,23 +188,19 @@ pub fn derive_write_ssh(input: TokenStream) -> TokenStream {
                     }
                 }
             }
-        },
+        }
         Data::Enum(data) if !has_discriminants(&data.variants) => {
             let variant_matches = data.variants.iter().map(|v| {
                 let variant = &v.ident;
                 let variant_str = variant.to_string().replace("__", "-");
 
-                let code = if !variant_str.contains("Unknown") {
+                if !variant_str.contains("Unknown") {
                     quote! {
                         #struct_name::#variant => #variant_str.write_ssh(writer),
                     }
                 } else {
                     quote! {}
-                };
-
-                eprintln!("CODE: {:?}", code.to_string());
-
-                code
+                }
             });
 
             quote! {
@@ -235,9 +213,12 @@ pub fn derive_write_ssh(input: TokenStream) -> TokenStream {
                     }
                 }
             }
-        },
+        }
         _ => panic!("WriteSSH can only be derived for structs"),
     };
+
+    // // Debug print
+    // eprintln!("CODE: {:?}", gen.to_string());
 
     gen.into()
 }

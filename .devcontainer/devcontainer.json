@@ -10,15 +10,9 @@
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
-		"ghcr.io/devcontainers/features/nvidia-cuda:1": {
-			"installCudnn": true
-		},
 		"ghcr.io/devcontainers/features/rust:1": {}
 	},
 	
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [8080],
-
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "rustc --version",
 
@@ -26,12 +20,12 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"GitHub.copilot-labs",
 				"ms-azuretools.vscode-docker",
-				"technosophos.vscode-make",
 				"ms-vscode.makefile-tools",
-				"GitHub.copilot",
-				"ms-toolsai.jupyter"
+				"ms-toolsai.jupyter",
+				"technosophos.vscode-make",
+				"GitHub.copilot-labs",
+				"GitHub.copilot"
 			]
 		}
 	}
