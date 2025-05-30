@@ -364,7 +364,7 @@ impl SSHMagic for MsgNewKeys {
 
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
 pub struct MsgKexECDHInit {
-    pub q_c: String, // string   Q_C, client's ephemeral public key octet string
+    pub q_c: Vec<u8>, // string   Q_C, client's ephemeral public key octet string
 }
 
 impl SSHMagic for MsgKexECDHInit {
