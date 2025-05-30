@@ -62,7 +62,11 @@ impl ReadSSH for Vec<String> {
         let name_list = String::from_utf8(name_list_bytes)
             .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid UTF-8"))?;
 
-        Ok(name_list.split(',').map(String::from).collect())
+        if name_list.is_empty() && length == 0 { // Ensure it was an intentionally empty list
+            Ok(Vec::new())
+        } else {
+            Ok(name_list.split(',').map(String::from).collect())
+        }
     }
 }
 
