@@ -95,6 +95,26 @@ impl WriteSSH for String {
     }
 }
 
+impl ReadSSH for Vec<u8> {
+    fn read_ssh<R: std::io::Read>(mut reader: R) -> Result<Self, std::io::Error>
+    where
+        Self: Sized,
+    {
+        let length = u32::read_ssh(&mut reader)? as usize;
+        let mut buffer = vec![0; length];
+        reader.read_exact(&mut buffer)?;
+        Ok(buffer)
+    }
+}
+
+impl WriteSSH for Vec<u8> {
+    fn write_ssh<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        let length = self.len() as u32;
+        length.write_ssh(writer)?;
+        writer.write_all(self)
+    }
+}
+
 impl WriteSSH for &'static str {
     fn write_ssh<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
         writer.write_all(self.as_bytes())?;
