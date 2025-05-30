@@ -1,2 +1,5 @@
+mod api;
 mod msg;
-mod reader;
+
+#[cfg(test)]
+mod tests;

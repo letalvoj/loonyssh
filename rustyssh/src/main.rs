@@ -1,27 +1,53 @@
+use std::io::Cursor;
+
+mod api;
 mod msg;
-mod reader;
 
+use pretty_hex::*;
 
-impl reader::ReadSSH for msg::DisconnectCode {
-    fn read_ssh<R: std::io::Read>(mut reader: R) -> Result<Self, std::io::Error> {
-        let code = u32::read_ssh(&mut reader)?;
-        let disconnect_code = msg::DisconnectCode::try_from(code)
-            .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid disconnect code"));
+use crate::api::WriteSSH;
+use crate::msg::*;
 
-        return disconnect_code;
-    }
-}
+fn main() -> std::io::Result<()> {
+    // Create an instance of Disconnect
+    let obj = MsgKexInit {
+        cookie: [2u8; 16],
+        kex_algorithms: vec!["kex_algorithms".to_string()],
+        server_host_key_algorithms: vec!["server_host_key_algorithms".to_string()],
+        encryption_algorithms_client_to_server: vec![
+            "encryption_algorithms_client_to_server".to_string()
+        ],
+        encryption_algorithms_server_to_client: vec![
+            "encryption_algorithms_server_to_client".to_string()
+        ],
+        mac_algorithms_client_to_server: vec!["mac_algorithms_client_to_server".to_string()],
+        mac_algorithms_server_to_client: vec!["mac_algorithms_server_to_client".to_string()],
+        compression_algorithms_client_to_server: vec![
+            "compression_algorithms_client_to_server".to_string()
+        ],
+        compression_algorithms_server_to_client: vec![
+            "compression_algorithms_server_to_client".to_string()
+        ],
+        languages_client_to_server: vec!["languages_client_to_server".to_string()],
+        languages_server_to_client: vec!["languages_server_to_client".to_string()],
+        kex_first_packet_follows: false,
+        reserved: 32,
+    };
 
-impl reader::ReadSSH for msg::Disconnect {
-    fn read_ssh<R: std::io::Read>(mut reader: R) -> Result<Self, std::io::Error> {
-        let code = msg::DisconnectCode::read_ssh(&mut reader)?;
-        let description = String::read_ssh(&mut reader)?;
-        let language = String::read_ssh(&mut reader)?;
+    // Serialize into a byte array
+    let mut bytes = Vec::new();
+    obj.write_ssh(&mut bytes)?;
 
-        Ok(msg::Disconnect { code, description, language })
-    }
-}
+    println!("Send: {:?}", obj);
+    println!("Byte: {:?}", bytes.hex_dump());
 
-fn main() {
-    println!("Hello, world!");
+    // Deserialize from the byte array
+    let mut cursor = Cursor::new(bytes);
+    let deserialized_obj = read_next_message(&mut cursor)?;
+
+    // Check if deserialization is correct
+    println!("Rcvd: {:?}", deserialized_obj);
+    println!("Mgck: {:?}", MsgDisconnect::MAGIC);
+
+    Ok(())
 }
