@@ -373,9 +373,9 @@ impl SSHMagic for MsgKexECDHInit {
 
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
 pub struct MsgKexECDHReply {
-    pub k_s: String,       // string   K_S, server's public host key
-    pub q_s: String,       // string   Q_S, server's ephemeral public key octet string
-    pub signature: String, // string   the signature on the exchange hash
+    pub k_s: Vec<u8>,       // string   K_S, server's public host key
+    pub q_s: Vec<u8>,       // string   Q_S, server's ephemeral public key octet string
+    pub signature: Vec<u8>, // string   the signature on the exchange hash
 }
 
 impl SSHMagic for MsgKexECDHReply {
@@ -385,18 +385,18 @@ impl SSHMagic for MsgKexECDHReply {
 // User Authentication Protocol Messages (RFC 4252)
 
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-pub struct MsgUserauthRequest { // Placeholder
+pub struct MsgUserauthRequest {
     pub user_name: String,
     pub service_name: String,
     pub method_name: String,
-    // Method-specific fields omitted for now
+    // Method-specific fields will be read manually
 }
 impl SSHMagic for MsgUserauthRequest {
     const MAGIC: u8 = Magic::UserauthRequest as u8;
 }
 
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-pub struct MsgUserauthFailure { // Placeholder
+pub struct MsgUserauthFailure {
     pub authentications_that_can_continue: Vec<String>,
     pub partial_success: bool,
 }
@@ -405,16 +405,13 @@ impl SSHMagic for MsgUserauthFailure {
 }
 
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-pub struct MsgUserauthSuccess { // Placeholder
-     // No fields for this message as per RFC 4252, Section 5.1
-     // pub data: Vec<u8>, // Replace with actual fields later
-}
+pub struct MsgUserauthSuccess {}
 impl SSHMagic for MsgUserauthSuccess {
     const MAGIC: u8 = Magic::UserauthSuccess as u8;
 }
 
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
-pub struct MsgUserauthBanner { // Placeholder
+pub struct MsgUserauthBanner {
     pub message: String,
     pub language_tag: String,
 }

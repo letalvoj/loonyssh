@@ -1,5 +1,5 @@
 [package]
-name = "rustyssh"
+name = "looneyssh"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,10 +7,25 @@ edition = "2021"
 name = "server_dev"
 path = "src/server_dev.rs"
 
+[[bin]]
+name = "client_dev"
+path = "src/client_dev.rs"
+
 [dependencies]
-tokio = { version = "1", features = ["full"] }
+serde = "1.0"
+serde_json = "1.0"
+log = "0.4"
 byteorder = "1.4"
-rand = "0.9.1"
+num_enum = "0.7.1"
+env_logger = "0.10.1"
+thiserror = "1.0"
+anyhow = "1.0"
+openssl = "0.10"
+pretty-hex = "0.4.0"
+rustyssh_derive = { path = "../rustyssh_derive" }
+rand = "0.8"
+tokio = { version = "1", features = ["full"] }
+
 base64 = "0.22.1"
 base64ct = "=1.6.0"
 
