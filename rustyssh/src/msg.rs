@@ -434,7 +434,7 @@ impl SSHMagic for MsgGlobalRequest {
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
 pub struct MsgRequestSuccess { // Placeholder
     // Port number for tcpip-forward, or other request-specific data
-    pub data: String, // Changed from Vec<u8>
+    pub data: Vec<u8>,
 }
 impl SSHMagic for MsgRequestSuccess {
     const MAGIC: u8 = Magic::RequestSuccess as u8;
@@ -443,7 +443,6 @@ impl SSHMagic for MsgRequestSuccess {
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
 pub struct MsgRequestFailure { // Placeholder
     // No fields for this message as per RFC 4254, Section 4
-    // pub data: Vec<u8>,
 }
 impl SSHMagic for MsgRequestFailure {
     const MAGIC: u8 = Magic::RequestFailure as u8;
@@ -496,7 +495,7 @@ impl SSHMagic for MsgChannelWindowAdjust {
 #[derive(Debug, PartialEq, ReadSSH, WriteSSH)]
 pub struct MsgChannelData { // Placeholder
     pub recipient_channel: u32,
-    pub data: String, // Changed from Vec<u8>
+    pub data: Vec<u8>,
 }
 impl SSHMagic for MsgChannelData {
     const MAGIC: u8 = Magic::ChannelData as u8;
@@ -506,7 +505,7 @@ impl SSHMagic for MsgChannelData {
 pub struct MsgChannelExtendedData { // Placeholder
     pub recipient_channel: u32,
     pub data_type_code: u32, // e.g., SSH_EXTENDED_DATA_STDERR (1)
-    pub data: String, // Changed from Vec<u8>
+    pub data: Vec<u8>, // Changed from String
 }
 impl SSHMagic for MsgChannelExtendedData {
     const MAGIC: u8 = Magic::ChannelExtendedData as u8;
