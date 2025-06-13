@@ -15,6 +15,14 @@ use crate::msg::*;
 
 // TODO(jules): Implement the server to a point where it anounces simple cyphers, passes kex, accepts password auth, verifies that the credentials are admin:password and responds with
 // If the test successfully passes, turn this TODO into a method comment, outlining what the code is finally doing, but do not drop it.
+//
+// This project has deps supporting the following KEX settup:
+//
+// KEX: ecdh-sha2-nistp256
+// Host Key: ssh-ed25519
+// Cipher: aes128-ctr
+// The 'ctr' crate provides the Counter (CTR) mode of operation for block ciphers.
+// MAC: hmac-sha2-256
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
